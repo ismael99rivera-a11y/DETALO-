@@ -165,10 +165,22 @@ app.get('/api/ical/:propId.ics', (req, res) => {
 
 // ── ICAL SYNC (importar desde plataformas) ───────────────
 
+// Headers que imitan un navegador real para evitar bloqueos de Booking.com y similares.
+// IMPORTANTE: NO incluir Accept-Encoding: gzip porque Node http no descomprime automáticamente
+// y recibiríamos bytes binarios en lugar de texto iCal.
+const BROWSER_HEADERS = {
+  'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Accept':          'text/calendar, text/html, application/xhtml+xml, */*;q=0.8',
+  'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',
+  'Accept-Encoding': 'identity',   // sin compresión → texto plano siempre
+  'Cache-Control':   'no-cache',
+  'Pragma':          'no-cache',
+};
+
 function fetchText(url) {
   return new Promise((resolve, reject) => {
     const mod = url.startsWith('https') ? https : http;
-    const req = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'Detalo/2.0' } }, res => {
+    const req = mod.get(url, { timeout: 15000, headers: BROWSER_HEADERS }, res => {
       // Seguir un nivel de redirect
       if ([301,302,303,307,308].includes(res.statusCode) && res.headers.location)
         return fetchText(res.headers.location).then(resolve).catch(reject);
@@ -236,10 +248,11 @@ async function syncSourceDebug(src, dryRun = false) {
     const preview = text.split('\n').slice(0, 8).join('\n');
     slog(`  Primeras líneas:\n${preview}`);
   } catch (err) {
-    report.error = err.message;
-    report.steps.push({ ok: false, msg: `Error al descargar: ${err.message}` });
-    slog(`  ERROR al descargar: ${err.message}`);
-    return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: err.message }, blocks: [], report };
+    const errMsg = err.message || err.code || String(err);
+    report.error = errMsg;
+    report.steps.push({ ok: false, msg: `Error al descargar: ${errMsg}` });
+    slog(`  ERROR al descargar: ${errMsg}`);
+    return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: errMsg }, blocks: [], report };
   }
 
   const events = parseIcalText(text);

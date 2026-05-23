@@ -26,7 +26,9 @@
       "Bash(powershell -Command \"Stop-Process -Id 11596 -Force\")",
       "Bash(node --check server.js)",
       "Bash(powershell -Command \"Stop-Process -Id 18900 -Force -ErrorAction SilentlyContinue\")",
-      "Bash(curl -s http://localhost:3000/api/sync/debug)"
+      "Bash(curl -s http://localhost:3000/api/sync/debug)",
+      "Bash(findstr :3000)",
+      "Bash(findstr LISTENING)"
     ]
   }
 }
