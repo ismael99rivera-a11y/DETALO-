@@ -201,6 +201,7 @@ function icalDateToYmd(s) {
 
 // Estado global del sync
 const syncState = { running: false, lastRun: null };
+let _syncPromise = null; // deduplicación: varias llamadas concurrentes comparten la misma promise
 
 async function syncSource(src) {
   let text;
@@ -241,11 +242,9 @@ async function syncSource(src) {
   };
 }
 
-async function syncAll() {
-  if (syncState.running) return;
-  syncState.running = true;
+async function _doSync() {
   const sources = readJSON(SOURCES_F, []);
-  if (!sources.length) { syncState.running = false; return; }
+  if (!sources.length) return;
   console.log(`[Detalo Sync] Iniciando sync de ${sources.length} fuente(s)…`);
   let bookings = readJSON(BOOKINGS_F, []);
   const updatedSources = [];
@@ -261,18 +260,26 @@ async function syncAll() {
   }
   writeJSON(BOOKINGS_F, bookings);
   writeJSON(SOURCES_F,  updatedSources);
-  syncState.running = false;
   syncState.lastRun = new Date().toISOString();
   console.log('[Detalo Sync] Completado.');
+}
+
+async function syncAll() {
+  if (_syncPromise) return _syncPromise;            // deduplicar llamadas concurrentes
+  syncState.running = true;
+  _syncPromise = _doSync()
+    .catch(e => console.error('[Sync error]', e.message))
+    .finally(() => { syncState.running = false; _syncPromise = null; });
+  return _syncPromise;
 }
 
 app.get('/api/sync/status', (_req, res) => {
   res.json({ ...syncState, sources: readJSON(SOURCES_F, []) });
 });
 
-app.post('/api/sync', (_req, res) => {
-  syncAll().catch(e => console.error('[Sync error]', e.message));
-  res.json({ ok: true });
+app.post('/api/sync', async (_req, res) => {
+  await syncAll();
+  res.json({ ok: true, sources: readJSON(SOURCES_F, []), lastRun: syncState.lastRun });
 });
 
 // ── FALLBACK ─────────────────────────────────────────────

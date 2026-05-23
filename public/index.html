@@ -372,6 +372,7 @@ let curY, curM;
 let activeId  = null;
 let formType  = 'reservation';
 let settingsTab = 'import';
+let _lastSyncRun = null;   // para detectar syncs automáticos y refrescar el calendario
 
 // ═══════════════════════════════════════════
 // UTILIDADES
@@ -598,6 +599,14 @@ async function updateSyncChip(){
     const st=await api('GET','/api/sync/status');
     const chip=document.getElementById('syncChip');
     sources=st.sources||[];
+
+    // Si hay un nuevo sync completado (automático cada 5 min), refrescar el calendario
+    if(st.lastRun && st.lastRun !== _lastSyncRun && !st.running){
+      _lastSyncRun = st.lastRun;
+      await refreshBookings();
+      renderCal();
+    }
+
     if(st.running){
       chip.className='sync-chip running';
       chip.innerHTML='<span class="spin">🔄</span> Sincronizando…';
@@ -848,19 +857,17 @@ async function init(){
     const btn=document.getElementById('btnSyncNow');
     btn.disabled=true; btn.textContent='🔄 Sincronizando…';
     try {
-      await api('POST','/api/sync');
-      // Esperar ~3 s para que el server procese y luego actualizar
-      setTimeout(async()=>{
-        const st=await api('GET','/api/sync/status');
-        sources=st.sources||[];
-        await refreshBookings();
-        renderCal();
-        renderSettingsTab();
-        updateSSettingsInfo();
-        await updateSyncChip();
-        btn.disabled=false; btn.textContent='🔄 Sincronizar ahora';
-      }, 3000);
-    } catch(err){ alert('Error al sincronizar: '+err.message); btn.disabled=false; btn.textContent='🔄 Sincronizar ahora'; }
+      // POST /api/sync ahora espera a que el sync termine antes de responder
+      const resp=await api('POST','/api/sync');
+      if(resp && resp.lastRun)  _lastSyncRun=resp.lastRun;
+      if(resp && resp.sources)  sources=resp.sources;
+      await refreshBookings();
+      renderCal();
+      renderSettingsTab();
+      updateSSettingsInfo();
+      await updateSyncChip();
+    } catch(err){ alert('Error al sincronizar: '+err.message); }
+    btn.disabled=false; btn.textContent='🔄 Sincronizar ahora';
   });
 
   // Fecha entrada → ajustar mínimo de salida
