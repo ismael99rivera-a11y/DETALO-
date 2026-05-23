@@ -4,7 +4,9 @@
       "Bash(python -m http.server 8765 --bind 127.0.0.1)",
       "Bash(ping -n 2 127.0.0.1)",
       "Bash(curl -s -o nul -w \"%{http_code}\" http://127.0.0.1:8765/detalo.html)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const db=new DatabaseSync\\(':memory:'\\);db.exec\\('CREATE TABLE t\\(k TEXT PRIMARY KEY,v TEXT\\)'\\);db.prepare\\('INSERT INTO t VALUES\\(?,?\\)'\\).run\\('x','hello'\\);console.log\\(db.prepare\\('SELECT v FROM t WHERE k=?'\\).get\\('x'\\)\\);\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

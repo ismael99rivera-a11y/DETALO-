@@ -6,19 +6,49 @@ const path     = require('path');
 const https    = require('https');
 const http     = require('http');
 const crypto   = require('crypto');
+const { DatabaseSync } = require('node:sqlite'); // integrado en Node.js ≥ 22.5
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── PATHS ────────────────────────────────────────────────
-const ROOT         = __dirname;
-const DATA_DIR     = path.join(ROOT, 'data');
-const PUBLIC_DIR   = path.join(ROOT, 'public');
-const BOOKINGS_F   = path.join(DATA_DIR, 'bookings.json');
-const SOURCES_F    = path.join(DATA_DIR, 'ical-sources.json');
+const ROOT       = __dirname;
+const PUBLIC_DIR = path.join(ROOT, 'public');
 
-for (const d of [DATA_DIR, PUBLIC_DIR]) {
+// Base de datos SQLite
+//   Railway : define la variable DB_PATH=/data/detalo.db
+//             (volumen persistente montado en /data en el dashboard de Railway)
+//   Local   : usa ./data/detalo.db por defecto
+const DB_FILE = process.env.DB_PATH || path.join(ROOT, 'data', 'detalo.db');
+const DB_DIR  = path.dirname(DB_FILE);
+
+for (const d of [DB_DIR, PUBLIC_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+}
+
+// ── SQLITE ───────────────────────────────────────────────
+const db = new DatabaseSync(DB_FILE);
+db.exec('PRAGMA journal_mode = WAL'); // mejor rendimiento / recuperación ante crash
+db.exec(`
+  CREATE TABLE IF NOT EXISTS store (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT '[]'
+  )
+`);
+console.log(`[DB] SQLite: ${DB_FILE}`);
+
+// Migración única desde archivos JSON legacy (solo útil en desarrollo local)
+const LEGACY_DIR = path.join(ROOT, 'data');
+for (const [key, fname] of [['bookings','bookings.json'],['sources','ical-sources.json']]) {
+  const f = path.join(LEGACY_DIR, fname);
+  if (fs.existsSync(f) && !db.prepare('SELECT 1 FROM store WHERE key=?').get(key)) {
+    try {
+      const raw = fs.readFileSync(f, 'utf8').trim();
+      JSON.parse(raw); // validar antes de insertar
+      db.prepare('INSERT INTO store(key,value) VALUES(?,?)').run(key, raw);
+      console.log(`[DB] Migrado ${fname} → SQLite`);
+    } catch(e) { console.warn(`[DB] Migración ${fname}: ${e.message}`); }
+  }
 }
 
 // ── PROPERTY MAP (para nombres en iCal de salida) ────────
@@ -41,12 +71,19 @@ app.use(express.static(PUBLIC_DIR));
 // ── HELPERS ──────────────────────────────────────────────
 const genId = () => crypto.randomBytes(8).toString('hex');
 
-function readJSON(file, def) {
-  try   { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-  catch { return def; }
+// Claves en la tabla `store` (reemplazan las rutas de archivo anteriores)
+const BOOKINGS_F = 'bookings';
+const SOURCES_F  = 'sources';
+
+function readJSON(key, def) {
+  try {
+    const row = db.prepare('SELECT value FROM store WHERE key=?').get(key);
+    return row ? JSON.parse(row.value) : def;
+  } catch { return def; }
 }
-function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+function writeJSON(key, data) {
+  db.prepare('INSERT OR REPLACE INTO store(key,value) VALUES(?,?)')
+    .run(key, JSON.stringify(data, null, 2));
 }
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T12:00:00Z');

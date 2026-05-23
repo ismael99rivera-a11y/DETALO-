@@ -1,0 +1,11 @@
+# Nixpacks config para Railway
+# node:sqlite es un módulo integrado en Node.js ≥ 22.5 — no requiere compilación nativa
+
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[start]
+cmd = "node server.js"
