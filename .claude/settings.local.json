@@ -6,7 +6,24 @@
       "Bash(curl -s -o nul -w \"%{http_code}\" http://127.0.0.1:8765/detalo.html)",
       "Bash(npm install *)",
       "Bash(node -e \"const {DatabaseSync}=require\\('node:sqlite'\\);const db=new DatabaseSync\\(':memory:'\\);db.exec\\('CREATE TABLE t\\(k TEXT PRIMARY KEY,v TEXT\\)'\\);db.prepare\\('INSERT INTO t VALUES\\(?,?\\)'\\).run\\('x','hello'\\);console.log\\(db.prepare\\('SELECT v FROM t WHERE k=?'\\).get\\('x'\\)\\);\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(ls /mnt/c/Users/detal/Desktop/DETALO/.claude/skills/ 2>/dev/null || echo \"no skills dir\")",
+      "Bash(ls /mnt/c/Users/detal/Desktop/DETALO/)",
+      "Bash(node server.js)",
+      "Bash(echo \"Server started, PID=$!\")",
+      "Bash(curl -s http://localhost:3000/api/bookings)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const j=JSON.parse\\(d\\); console.log\\('Total bookings:', j.length\\); j.forEach\\(b=>console.log\\(' -', b.type, b.pid, b.s, b.e\\)\\);\")",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{JSON.parse\\(d\\).forEach\\(b=>console.log\\(b.type.padEnd\\(12\\),b.pid.padEnd\\(6\\),b.s,b.e\\)\\);}\\)\")",
+      "Bash(echo \"Test iCal server PID=$!\")",
+      "Bash(curl -s http://localhost:4001/)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")",
+      "Bash(taskkill /PID 11596 /F)",
+      "Read(//tmp/**)",
+      "Bash(findstr \":3000\")",
+      "Bash(powershell -Command \"Stop-Process -Id 11596 -Force\")"
     ]
   }
 }

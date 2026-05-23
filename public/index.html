@@ -11,7 +11,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 :root{
   --res-bg:#bbf7d0;--res-fg:#14532d;--res-bdr:#22c55e;
   --blk-bg:#fecaca;--blk-fg:#7f1d1d;--blk-bdr:#ef4444;
-  --ical-bg:#fee2e2;--ical-fg:#92400e;--ical-bdr:#f97316;
+  --ical-bg:#ffedd5;--ical-fg:#92400e;--ical-bdr:#f97316;
   --cell-w:38px;--cell-h:36px;--prop-w:175px;
 }
 #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -109,10 +109,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 .dc.bk-start{border-left:3px solid}
 .dc.res.bk-start{border-left-color:var(--res-bdr)}
-.dc.blk.bk-start,.dc.icalblk.bk-start{border-left-color:var(--blk-bdr)}
+.dc.blk.bk-start{border-left-color:var(--blk-bdr)}
+.dc.icalblk.bk-start{border-left-color:var(--ical-bdr)}
 .dc.bk-end{border-right:2px solid}
 .dc.res.bk-end{border-right-color:var(--res-bdr)}
-.dc.blk.bk-end,.dc.icalblk.bk-end{border-right-color:var(--blk-bdr)}
+.dc.blk.bk-end{border-right-color:var(--blk-bdr)}
+.dc.icalblk.bk-end{border-right-color:var(--ical-bdr)}
 
 .bk-label{position:absolute;top:50%;left:5px;right:3px;transform:translateY(-50%);font-size:.66rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1}
 .bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}
