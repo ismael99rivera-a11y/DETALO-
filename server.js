@@ -215,65 +215,125 @@ function icalDateToYmd(s) {
 const syncState = { running: false, lastRun: null };
 let _syncPromise = null; // deduplicación: varias llamadas concurrentes comparten la misma promise
 
-async function syncSource(src) {
+// ── SYNC CON LOGS DETALLADOS ─────────────────────────────
+// log acumulado del último sync (accesible en GET /api/sync/debug)
+let lastSyncLog = [];
+function slog(...args) {
+  const line = args.join(' ');
+  console.log('[Sync]', line);
+  lastSyncLog.push(line);
+}
+
+async function syncSourceDebug(src, dryRun = false) {
+  const report = { src: { id: src.id, platform: src.platform, url: src.url, propIds: src.propIds || [src.propId] }, steps: [], blocks: [], error: null };
   let text;
-  try   { text = await fetchText(src.url); }
-  catch (err) {
-    return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: err.message }, blocks: [] };
+  try {
+    text = await fetchText(src.url);
+    report.steps.push({ ok: true, msg: `Descargado ${text.length} bytes` });
+    slog(`  URL: ${src.url}`);
+    slog(`  Bytes descargados: ${text.length}`);
+    // Mostrar primeras líneas del iCal para diagnóstico
+    const preview = text.split('\n').slice(0, 8).join('\n');
+    slog(`  Primeras líneas:\n${preview}`);
+  } catch (err) {
+    report.error = err.message;
+    report.steps.push({ ok: false, msg: `Error al descargar: ${err.message}` });
+    slog(`  ERROR al descargar: ${err.message}`);
+    return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: err.message }, blocks: [], report };
   }
+
   const events = parseIcalText(text);
+  slog(`  Eventos VEVENT encontrados: ${events.length}`);
+  report.steps.push({ ok: true, msg: `${events.length} eventos VEVENT encontrados` });
+
   const blocks = [];
   for (const ev of events) {
     let s = icalDateToYmd(ev['DTSTART']);
     let e = icalDateToYmd(ev['DTEND']);
-    if (!s) continue;
+    const uid     = ev['UID']     || '';
+    const status  = (ev['STATUS'] || '').toUpperCase();
+    const summary = ev['SUMMARY'] || '';
+
+    // Log cada evento
+    slog(`    VEVENT uid=${uid} summary="${summary}" dtstart=${ev['DTSTART']} dtend=${ev['DTEND']} status=${status}`);
+
+    if (!s) {
+      slog(`      → SALTADO: DTSTART no tiene fecha válida`);
+      report.steps.push({ ok: false, msg: `Saltado (sin DTSTART): uid=${uid}` });
+      continue;
+    }
     if (!e) e = s;
-    e = addDays(e, -1);          // DTEND es exclusivo → restar 1 día
+    const eOrig = e;
+    e = addDays(e, -1);   // DTEND es exclusivo → restar 1 día
     if (e < s) e = s;
-    const uid = ev['UID'] || '';
-    if (uid.endsWith('@detalo')) continue;               // evitar nuestros propios eventos
-    if ((ev['STATUS'] || '').toUpperCase() === 'CANCELLED') continue;
-    // Crear un bloque por cada unidad que ocupa este anuncio
+
+    if (uid.endsWith('@detalo')) {
+      slog(`      → SALTADO: UID termina en @detalo (evento propio)`);
+      report.steps.push({ ok: false, msg: `Saltado (UID @detalo): uid=${uid}` });
+      continue;
+    }
+    if (status === 'CANCELLED') {
+      slog(`      → SALTADO: STATUS=CANCELLED`);
+      report.steps.push({ ok: false, msg: `Saltado (CANCELLED): uid=${uid}` });
+      continue;
+    }
+
     const propIds = src.propIds && src.propIds.length ? src.propIds : [src.propId];
+    slog(`      → ACEPTADO s=${s} e=${e} (DTEND ${eOrig} -1 día) pids=${propIds.join(',')}`);
+    report.steps.push({ ok: true, msg: `Aceptado: "${summary}" ${s} → ${e} pids=${propIds.join(',')}` });
+
     for (const pid of propIds) {
-      blocks.push({
+      const blk = {
         id: genId(), pid,
         type: 'ical-block',
-        name: ev['SUMMARY'] || 'Bloqueado',
+        name: summary || 'Bloqueado',
         phone: '', s, e, income: 0,
         platform: src.platform || '',
         notes: `Importado de ${src.platform || 'iCal'}`,
         source: 'ical', sourceId: src.id, icalUid: uid,
         syncedAt: new Date().toISOString(),
-      });
+      };
+      blocks.push(blk);
+      report.blocks.push({ pid, s, e, summary });
     }
   }
+
+  slog(`  Bloques creados: ${blocks.length}`);
   return {
     updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'ok', lastError: null, importedCount: blocks.length },
     blocks,
+    report,
   };
 }
 
+// Wrapper para mantener compatibilidad con _doSync
+async function syncSource(src) {
+  const result = await syncSourceDebug(src);
+  return result;
+}
+
 async function _doSync() {
+  lastSyncLog = [];
   const sources = readJSON(SOURCES_F, []);
-  if (!sources.length) return;
-  console.log(`[Detalo Sync] Iniciando sync de ${sources.length} fuente(s)…`);
+  if (!sources.length) { slog('Sin fuentes iCal configuradas.'); return; }
+  slog(`=== Sync iniciado: ${new Date().toISOString()} | ${sources.length} fuente(s) ===`);
   let bookings = readJSON(BOOKINGS_F, []);
   const updatedSources = [];
   for (const src of sources) {
+    slog(`\nFuente: ${src.platform || '(sin plataforma)'} | propIds: ${(src.propIds||[src.propId]).join(',')}`);
     const { updated, blocks } = await syncSource(src);
     bookings = bookings.filter(b => !(b.source === 'ical' && b.sourceId === src.id));
     bookings.push(...blocks);
     updatedSources.push(updated);
     if (updated.lastStatus === 'ok')
-      console.log(`  ✓ ${src.platform || src.propId}: ${updated.importedCount} eventos`);
+      slog(`  ✓ ${src.platform || src.propId}: ${updated.importedCount} bloques guardados`);
     else
-      console.log(`  ✗ ${src.propId}: ${updated.lastError}`);
+      slog(`  ✗ ${src.propId}: ${updated.lastError}`);
   }
   writeJSON(BOOKINGS_F, bookings);
   writeJSON(SOURCES_F,  updatedSources);
   syncState.lastRun = new Date().toISOString();
-  console.log('[Detalo Sync] Completado.');
+  slog(`\n=== Sync completado: ${syncState.lastRun} | Total bookings en DB: ${bookings.length} ===`);
 }
 
 async function syncAll() {
@@ -292,6 +352,35 @@ app.get('/api/sync/status', (_req, res) => {
 app.post('/api/sync', async (_req, res) => {
   await syncAll();
   res.json({ ok: true, sources: readJSON(SOURCES_F, []), lastRun: syncState.lastRun });
+});
+
+// ── DEBUG: diagnóstico completo de una fuente ─────────────
+// GET /api/sync/debug          → reporte del último sync (logs acumulados)
+// POST /api/sync/debug/:id     → fuerza re-sync de esa fuente y devuelve reporte detallado
+app.get('/api/sync/debug', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send(lastSyncLog.length
+    ? lastSyncLog.join('\n')
+    : 'No hay logs del último sync. Haz click en "Sincronizar ahora" primero.');
+});
+
+app.post('/api/sync/debug/:id', async (req, res) => {
+  const sources = readJSON(SOURCES_F, []);
+  const src = sources.find(s => s.id === req.params.id);
+  if (!src) return res.status(404).json({ error: 'Fuente no encontrada' });
+
+  const { updated, blocks, report } = await syncSourceDebug(src);
+  const bookings = readJSON(BOOKINGS_F, []);
+  const icalForThis = bookings.filter(b => b.source === 'ical' && b.sourceId === src.id);
+
+  res.json({
+    source: src,
+    result: updated,
+    eventsCreated: blocks.length,
+    blocksAlreadyInDB: icalForThis.length,
+    blocksInDB: icalForThis,
+    report,
+  });
 });
 
 // ── FALLBACK ─────────────────────────────────────────────

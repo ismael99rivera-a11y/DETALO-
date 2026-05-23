@@ -313,6 +313,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="s-sync-info" id="sSyncInfo">—</div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-sec" id="btnSyncNow">🔄 Sincronizar ahora</button>
+        <button class="btn btn-sec" id="btnDebugLog" title="Ver logs detallados del último sync">🪵 Ver logs</button>
         <button class="btn btn-sec" id="settingsCerrar">Cerrar</button>
       </div>
     </div>
@@ -681,6 +682,7 @@ function renderImportTab(){
           <span class="si-plat">${src.platform||'—'}</span>
           <span class="si-url" title="${src.url}">${src.url}</span>
           ${status}
+          <button class="btn btn-sec" style="padding:4px 8px;font-size:.75rem;flex-shrink:0" title="Diagnóstico de esta fuente" onclick="debugSource('${src.id}')">🔍</button>
           <button class="btn btn-del" style="padding:4px 10px;font-size:.75rem;flex-shrink:0" onclick="removeSource('${src.id}')">🗑</button>
         </div>`;
       }).join('')
@@ -757,6 +759,40 @@ async function addSource(){
     await updateSyncChip();
   } catch(err){ alert('Error al agregar fuente: '+err.message); }
 }
+
+window.debugSource = async function(id){
+  const btn = event.target;
+  btn.disabled=true; btn.textContent='⏳';
+  try {
+    const r = await api('POST', `/api/sync/debug/${id}`);
+    // Construir reporte legible
+    const lines = [];
+    lines.push(`=== DIAGNÓSTICO iCal: ${r.source.platform||'(sin plataforma)'} ===`);
+    lines.push(`URL: ${r.source.url}`);
+    lines.push(`Propiedad(es): ${r.source.propIds.join(', ')}`);
+    lines.push('');
+    lines.push('--- Pasos ---');
+    (r.report?.steps||[]).forEach(s=>lines.push((s.ok?'✓':'✗')+' '+s.msg));
+    lines.push('');
+    lines.push(`--- Bloques creados en este sync: ${r.eventsCreated} ---`);
+    (r.report?.blocks||[]).forEach(b=>lines.push(`  ${b.pid}: "${b.summary}" ${b.s} → ${b.e}`));
+    lines.push('');
+    lines.push(`--- Bloques ya en DB para esta fuente: ${r.blocksAlreadyInDB} ---`);
+    (r.blocksInDB||[]).forEach(b=>lines.push(`  ${b.pid}: "${b.name}" ${b.s} → ${b.e}`));
+    if(r.result?.lastError){
+      lines.push('');
+      lines.push('ERROR: '+r.result.lastError);
+    }
+    alert(lines.join('\n'));
+    // Refrescar calendario con los nuevos datos
+    await refreshBookings();
+    renderCal();
+    renderSettingsTab();
+    updateSSettingsInfo();
+    await updateSyncChip();
+  } catch(err){ alert('Error en diagnóstico: '+err.message); }
+  finally { btn.disabled=false; btn.textContent='🔍'; }
+};
 
 window.removeSource = async function(id){
   if(!confirm('¿Eliminar esta fuente? También se eliminarán sus bloques importados.')) return;
@@ -870,6 +906,10 @@ async function init(){
       await updateSyncChip();
     } catch(err){ alert('Error al sincronizar: '+err.message); }
     btn.disabled=false; btn.textContent='🔄 Sincronizar ahora';
+  });
+
+  document.getElementById('btnDebugLog').addEventListener('click', ()=>{
+    window.open('/api/sync/debug', '_blank');
   });
 
   // Fecha entrada → ajustar mínimo de salida
