@@ -1,12 +1,11 @@
 'use strict';
 
-const express  = require('express');
-const fs       = require('fs');
-const path     = require('path');
-const https    = require('https');
-const http     = require('http');
-const crypto   = require('crypto');
-const { DatabaseSync } = require('node:sqlite'); // integrado en Node.js ≥ 22.5
+const express = require('express');
+const fs      = require('fs');
+const path    = require('path');
+const https   = require('https');
+const http    = require('http');
+const crypto  = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -15,41 +14,18 @@ const PORT = process.env.PORT || 3000;
 const ROOT       = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
 
-// Base de datos SQLite
-//   Railway : define la variable DB_PATH=/data/detalo.db
-//             (volumen persistente montado en /data en el dashboard de Railway)
-//   Local   : usa ./data/detalo.db por defecto
-const DB_FILE = process.env.DB_PATH || path.join(ROOT, 'data', 'detalo.db');
-const DB_DIR  = path.dirname(DB_FILE);
+// En Railway: añade la variable DATA_DIR=/data
+//             y monta un volumen persistente en /data desde el dashboard.
+// En local:   usa ./data automáticamente (sin configurar nada).
+const DATA_DIR   = process.env.DATA_DIR || path.join(ROOT, 'data');
+const BOOKINGS_F = path.join(DATA_DIR, 'bookings.json');
+const SOURCES_F  = path.join(DATA_DIR, 'ical-sources.json');
 
-for (const d of [DB_DIR, PUBLIC_DIR]) {
+for (const d of [DATA_DIR, PUBLIC_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
 
-// ── SQLITE ───────────────────────────────────────────────
-const db = new DatabaseSync(DB_FILE);
-db.exec('PRAGMA journal_mode = WAL'); // mejor rendimiento / recuperación ante crash
-db.exec(`
-  CREATE TABLE IF NOT EXISTS store (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL DEFAULT '[]'
-  )
-`);
-console.log(`[DB] SQLite: ${DB_FILE}`);
-
-// Migración única desde archivos JSON legacy (solo útil en desarrollo local)
-const LEGACY_DIR = path.join(ROOT, 'data');
-for (const [key, fname] of [['bookings','bookings.json'],['sources','ical-sources.json']]) {
-  const f = path.join(LEGACY_DIR, fname);
-  if (fs.existsSync(f) && !db.prepare('SELECT 1 FROM store WHERE key=?').get(key)) {
-    try {
-      const raw = fs.readFileSync(f, 'utf8').trim();
-      JSON.parse(raw); // validar antes de insertar
-      db.prepare('INSERT INTO store(key,value) VALUES(?,?)').run(key, raw);
-      console.log(`[DB] Migrado ${fname} → SQLite`);
-    } catch(e) { console.warn(`[DB] Migración ${fname}: ${e.message}`); }
-  }
-}
+console.log(`[Detalo] Datos en: ${DATA_DIR}`);
 
 // ── PROPERTY MAP (para nombres en iCal de salida) ────────
 const PROP_NAMES = {
@@ -71,20 +47,19 @@ app.use(express.static(PUBLIC_DIR));
 // ── HELPERS ──────────────────────────────────────────────
 const genId = () => crypto.randomBytes(8).toString('hex');
 
-// Claves en la tabla `store` (reemplazan las rutas de archivo anteriores)
-const BOOKINGS_F = 'bookings';
-const SOURCES_F  = 'sources';
+function readJSON(file, def) {
+  try   { return JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch { return def; }
+}
 
-function readJSON(key, def) {
-  try {
-    const row = db.prepare('SELECT value FROM store WHERE key=?').get(key);
-    return row ? JSON.parse(row.value) : def;
-  } catch { return def; }
+// Escritura atómica: nunca deja el archivo a medias si el proceso muere.
+// Escribe en .tmp y luego renombra (operación atómica en el mismo filesystem).
+function writeJSON(file, data) {
+  const tmp = file + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+  fs.renameSync(tmp, file);
 }
-function writeJSON(key, data) {
-  db.prepare('INSERT OR REPLACE INTO store(key,value) VALUES(?,?)')
-    .run(key, JSON.stringify(data, null, 2));
-}
+
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T12:00:00Z');
   d.setUTCDate(d.getUTCDate() + n);
