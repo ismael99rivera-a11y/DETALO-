@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m http.server 8765 --bind 127.0.0.1)",
+      "Bash(ping -n 2 127.0.0.1)",
+      "Bash(curl -s -o nul -w \"%{http_code}\" http://127.0.0.1:8765/detalo.html)",
+      "Bash(npm install *)"
+    ]
+  }
+}

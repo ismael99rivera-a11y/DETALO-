@@ -1,0 +1,16 @@
+{
+  "name": "detalo",
+  "version": "2.0.0",
+  "description": "Detalo — Gestión de Propiedades Vacacionales",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

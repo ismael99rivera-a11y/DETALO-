@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Detalo — Gestión Vacacional</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh}
+:root{
+  --res-bg:#bbf7d0;--res-fg:#14532d;--res-bdr:#22c55e;
+  --blk-bg:#fecaca;--blk-fg:#7f1d1d;--blk-bdr:#ef4444;
+  --cell-w:38px;--cell-h:36px;--prop-w:175px;--hdr-h:60px;
+}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── HEADER ── */
+.app-hdr{
+  height:var(--hdr-h);background:#0f172a;color:#fff;
+  display:flex;align-items:center;padding:0 20px;gap:16px;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.4);z-index:200
+}
+.logo{font-size:1.4rem;font-weight:800;letter-spacing:-.5px;color:#38bdf8}
+.logo span{color:#fff}
+.legend{display:flex;gap:14px;margin-left:8px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:.75rem;color:#94a3b8}
+.leg-dot{width:11px;height:11px;border-radius:2px}
+.leg-dot.r{background:#22c55e}.leg-dot.b{background:#ef4444}.leg-dot.a{background:#475569;opacity:.4}
+.month-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
+.nav-btn{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer;
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:background .15s
+}
+.nav-btn:hover{background:rgba(255,255,255,.22)}
+.month-lbl{font-size:.95rem;font-weight:600;min-width:170px;text-align:center;text-transform:capitalize}
+.btn-hoy{
+  background:#0ea5e9;border:none;color:#fff;padding:6px 14px;
+  border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;transition:background .15s
+}
+.btn-hoy:hover{background:#0284c7}
+
+/* ── CALENDAR SHELL ── */
+.cal-shell{flex:1;overflow:auto;position:relative}
+.cal-shell::-webkit-scrollbar{width:7px;height:7px}
+.cal-shell::-webkit-scrollbar-track{background:#e2e8f0}
+.cal-shell::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
+.cal-wrap{min-width:max-content}
+
+/* ── DAY HEADER ── */
+.day-hdr-row{
+  display:flex;position:sticky;top:0;z-index:90;
+  background:#f8fafc;border-bottom:2px solid #cbd5e1
+}
+.corner{
+  width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;
+  position:sticky;left:0;z-index:95;
+  background:#f8fafc;border-right:2px solid #cbd5e1
+}
+.day-th{
+  width:var(--cell-w);min-width:var(--cell-w);height:42px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:.65rem;color:#64748b;border-right:1px solid #e2e8f0;flex-shrink:0
+}
+.day-th .dn{font-size:.78rem;font-weight:700}
+.day-th.wknd{background:#fafafe}
+.day-th.today-col .dn{color:#0ea5e9}
+.day-th.today-col{background:#f0f9ff}
+
+/* ── DESTINATION HEADER ── */
+.dest-hdr{display:flex;background:#1e293b}
+.dest-lbl{
+  width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;
+  height:26px;display:flex;align-items:center;padding:0 12px;
+  font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:#7dd3fc;background:#1e293b;
+  position:sticky;left:0;z-index:70;border-right:2px solid #0f172a
+}
+.dest-fill{flex:1;background:#1e293b;border-bottom:1px solid #0f172a}
+
+/* ── GROUP SUB-HEADER ── */
+.grp-hdr{display:flex;background:#293548}
+.grp-lbl{
+  width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;
+  height:21px;display:flex;align-items:center;padding:0 16px;
+  font-size:.67rem;font-weight:600;letter-spacing:.03em;font-style:italic;
+  color:#7dd3fc;background:#293548;
+  position:sticky;left:0;z-index:60;border-right:2px solid #1e293b
+}
+.grp-fill{flex:1;background:#293548;border-bottom:1px solid #1e293b}
+
+/* ── SEPARADOR GRUPO → INDIVIDUAL ── */
+.grp-sep{height:3px;background:#dde3ea;border-bottom:1px solid #c8d0db}
+
+/* ── PROPERTY ROW ── */
+.prop-row{display:flex;border-bottom:1px solid #e9edf2}
+.prop-row:last-child{border-bottom:1px solid #cbd5e1}
+.prop-name{
+  width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;
+  height:var(--cell-h);display:flex;align-items:center;padding:0 10px 0 14px;
+  font-size:.78rem;font-weight:500;color:#475569;background:#fcfcfd;
+  border-right:2px solid #cbd5e1;
+  position:sticky;left:0;z-index:50;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:background .1s
+}
+.prop-row:hover .prop-name{background:#f0f9ff}
+
+/* ── DAY CELL ── */
+.dc{
+  width:var(--cell-w);min-width:var(--cell-w);height:var(--cell-h);
+  flex-shrink:0;border-right:1px solid #f1f5f9;
+  position:relative;cursor:pointer;background:#fff;
+  overflow:hidden;transition:background .1s
+}
+.dc:hover{background:#f0f9ff}
+.dc.wknd{background:#fafafe}
+.dc.wknd:hover{background:#f0f4ff}
+.dc.today-col{background:#f0f9ff}
+.dc.today-col::after{
+  content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:#0ea5e9
+}
+
+/* ── BOOKING CELLS ── */
+.dc.res{background:var(--res-bg);cursor:pointer}
+.dc.res:hover{background:#86efac}
+.dc.blk{background:var(--blk-bg);cursor:pointer}
+.dc.blk:hover{background:#fca5a5}
+
+.dc.bk-start{border-left:3px solid}
+.dc.res.bk-start{border-left-color:var(--res-bdr)}
+.dc.blk.bk-start{border-left-color:var(--blk-bdr)}
+.dc.bk-end{border-right:2px solid}
+.dc.res.bk-end{border-right-color:var(--res-bdr)}
+.dc.blk.bk-end{border-right-color:var(--blk-bdr)}
+
+.bk-label{
+  position:absolute;top:50%;left:5px;right:3px;
+  transform:translateY(-50%);
+  font-size:.66rem;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  pointer-events:none;line-height:1
+}
+.bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}
+
+/* ── MODAL ── */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(15,23,42,.65);z-index:1000;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(3px)
+}
+.overlay.on{display:flex}
+.mbox{
+  background:#fff;border-radius:14px;
+  box-shadow:0 24px 64px rgba(0,0,0,.35);
+  width:500px;max-width:calc(100vw - 32px);
+  max-height:calc(100vh - 60px);overflow-y:auto;
+  animation:pop .18s ease
+}
+@keyframes pop{from{opacity:0;transform:translateY(-14px) scale(.97)}to{opacity:1;transform:none}}
+.mhdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid #e2e8f0
+}
+.mtitle{font-size:1rem;font-weight:700;color:#0f172a}
+.mclose{
+  background:none;border:none;cursor:pointer;color:#94a3b8;
+  font-size:1.3rem;line-height:1;padding:4px 6px;border-radius:5px;transition:all .15s
+}
+.mclose:hover{color:#475569;background:#f1f5f9}
+.mbody{padding:22px}
+.mfoot{
+  padding:14px 22px;border-top:1px solid #e2e8f0;
+  display:flex;gap:10px;justify-content:flex-end
+}
+
+/* ── DETAIL VIEW ── */
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 13px;border-radius:20px;font-size:.78rem;font-weight:700;margin-bottom:18px
+}
+.badge.r{background:var(--res-bg);color:var(--res-fg)}
+.badge.b{background:var(--blk-bg);color:var(--blk-fg)}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.di label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:3px}
+.di .val{font-size:.88rem;font-weight:600;color:#1e293b}
+.di.full{grid-column:1/-1}
+
+/* ── FORM ── */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:.78rem;font-weight:600;color:#475569;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{
+  width:100%;border:1.5px solid #e2e8f0;border-radius:8px;
+  padding:8px 10px;font-size:.88rem;color:#1e293b;background:#fff;
+  transition:border-color .15s,box-shadow .15s;font-family:inherit
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)
+}
+.fg textarea{resize:vertical;min-height:66px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.type-sel{display:flex;gap:10px}
+.tbtn{
+  flex:1;padding:8px 6px;border-radius:8px;border:2px solid #e2e8f0;
+  background:#fff;cursor:pointer;font-size:.83rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s
+}
+.tbtn.r{color:var(--res-fg)}.tbtn.b{color:var(--blk-fg)}
+.tbtn.on.r{background:var(--res-bg);border-color:var(--res-bdr)}
+.tbtn.on.b{background:var(--blk-bg);border-color:var(--blk-bdr)}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:8px;border:none;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-pri{background:#0ea5e9;color:#fff}.btn-pri:hover{background:#0284c7}
+.btn-del{background:#ef4444;color:#fff}.btn-del:hover{background:#dc2626}
+.btn-sec{background:#f1f5f9;color:#475569}.btn-sec:hover{background:#e2e8f0}
+
+.req{color:#ef4444}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="app-hdr">
+    <div class="logo">Deta<span>lo</span></div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot r"></div>Reserva</div>
+      <div class="leg-item"><div class="leg-dot b"></div>Bloqueo</div>
+      <div class="leg-item"><div class="leg-dot a"></div>Disponible</div>
+    </div>
+    <div class="month-nav">
+      <button class="nav-btn" id="btnPrev">&#8249;</button>
+      <div class="month-lbl" id="monthLbl"></div>
+      <button class="nav-btn" id="btnNext">&#8250;</button>
+      <button class="btn-hoy" id="btnHoy">Hoy</button>
+    </div>
+  </header>
+
+  <div class="cal-shell" id="calShell">
+    <div class="cal-wrap" id="calWrap"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL VER RESERVA ═══ -->
+<div class="overlay" id="viewOv">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mtitle" id="viewTitle">Detalle</div>
+      <button class="mclose" id="viewClose">&#215;</button>
+    </div>
+    <div class="mbody" id="viewBody"></div>
+    <div class="mfoot">
+      <button class="btn btn-del" id="btnDel">Eliminar</button>
+      <button class="btn btn-sec" id="btnViewCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CREAR RESERVA ═══ -->
+<div class="overlay" id="formOv">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mtitle" id="formTitle">Nueva Reserva</div>
+      <button class="mclose" id="formClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <form id="bkForm" novalidate>
+
+        <div class="fg">
+          <label>Tipo</label>
+          <div class="type-sel">
+            <button type="button" class="tbtn r on" data-t="reservation">🟢 Reserva</button>
+            <button type="button" class="tbtn b" data-t="block">🔴 Bloqueo</button>
+          </div>
+          <input type="hidden" id="fType" value="reservation">
+        </div>
+
+        <div id="guestSec">
+          <div class="frow">
+            <div class="fg">
+              <label>Nombre huésped <span class="req">*</span></label>
+              <input type="text" id="fName" placeholder="Nombre completo">
+            </div>
+            <div class="fg">
+              <label>Teléfono</label>
+              <input type="tel" id="fPhone" placeholder="+52 33 0000 0000">
+            </div>
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="fg">
+            <label>Entrada <span class="req">*</span></label>
+            <input type="date" id="fStart">
+          </div>
+          <div class="fg">
+            <label>Salida <span class="req">*</span></label>
+            <input type="date" id="fEnd">
+          </div>
+        </div>
+
+        <div id="incomeSec">
+          <div class="frow">
+            <div class="fg">
+              <label>Ingreso bruto ($)</label>
+              <input type="number" id="fIncome" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="fg">
+              <label>Plataforma</label>
+              <select id="fPlatform">
+                <option value="">Seleccionar…</option>
+                <option>Airbnb</option>
+                <option>Booking.com</option>
+                <option>VRBO</option>
+                <option>Directo</option>
+                <option>Facebook</option>
+                <option>WhatsApp</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="fg">
+          <label>Notas</label>
+          <textarea id="fNotes" placeholder="Peticiones especiales, notas adicionales…"></textarea>
+        </div>
+
+        <input type="hidden" id="fPropId">
+        <input type="hidden" id="fBkId">
+      </form>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="btnFormCerrar">Cancelar</button>
+      <button class="btn btn-pri" id="btnGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATOS ESTÁTICOS
+// ═══════════════════════════════════════════
+const DESTINATIONS = [
+  'Tequila','Tapalpa','Mazamitla',
+  'Nuevo Vallarta','Guadalajara','San Pedro Tesistán'
+];
+
+const PROPS = [
+  // TEQUILA — Villa La Palma
+  {id:'tq1',name:'Villa 1',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq2',name:'Villa 2',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq3',name:'Villa 3',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq4',name:'Villa 4',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq5',name:'Villa 5',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq6',name:'Villa 6',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq7',name:'Villa 7',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq8',name:'Villa 8',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq9',name:'Villa 9',dest:'Tequila',group:'Villa La Palma'},
+  // TAPALPA — Cabañas Santa Fe
+  {id:'ta1',name:'Cabaña Lobo',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta2',name:'Cabaña Ciervo',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta3',name:'Cabaña Oso',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta4',name:'Cabaña Tigre',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta5',name:'Cabaña Puma',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta6',name:'Cabaña Venado',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta7',name:'Cabaña Lince',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  // TAPALPA — Cabaña El Cielo
+  {id:'ta8',name:'Cabaña El Cielo',dest:'Tapalpa',group:'Cabaña El Cielo'},
+  // TAPALPA — Villas La Cumbre
+  {id:'ta9',name:'Villa 1',dest:'Tapalpa',group:'Villas La Cumbre'},
+  {id:'ta10',name:'Villa 2',dest:'Tapalpa',group:'Villas La Cumbre'},
+  // MAZAMITLA
+  {id:'mz1',name:'Cabaña Grande',dest:'Mazamitla',group:null},
+  {id:'mz2',name:'Esmeralda 1',dest:'Mazamitla',group:'Villas La Esmeralda'},
+  {id:'mz3',name:'Esmeralda 2',dest:'Mazamitla',group:'Villas La Esmeralda'},
+  {id:'mz4',name:'Esmeralda 3',dest:'Mazamitla',group:'Villas La Esmeralda'},
+  // NUEVO VALLARTA
+  {id:'nv1',name:'Riviera Capri',dest:'Nuevo Vallarta',group:null},
+  // GUADALAJARA
+  {id:'gd1',name:'Solares Liva',dest:'Guadalajara',group:null},
+  {id:'gd2',name:'Solares Soare',dest:'Guadalajara',group:null},
+  {id:'gd3',name:'Casita Azul',dest:'Guadalajara',group:null},
+  {id:'gd4',name:'Xima Diana',dest:'Guadalajara',group:null},
+  // SAN PEDRO TESISTÁN
+  {id:'sp5',name:'Casa de Campo',dest:'San Pedro Tesistán',group:null},
+  {id:'sp1',name:'Depto 1',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+  {id:'sp2',name:'Depto 2',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+  {id:'sp3',name:'Depto 3',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+  {id:'sp4',name:'Depto 4',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+];
+
+const DAY_NAMES = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+const MONTH_NAMES = ['enero','febrero','marzo','abril','mayo','junio',
+  'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+// ═══════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════
+let bookings = [];
+let curY, curM;
+let activeId = null;
+let formType = 'reservation';
+
+// ═══════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const pad2  = n => String(n).padStart(2,'0');
+const dStr  = (y,m,d) => `${y}-${pad2(m+1)}-${pad2(d)}`;
+const daysInMonth = (y,m) => new Date(y,m+1,0).getDate();
+const dayOfWeek   = (y,m,d) => new Date(y,m,d).getDay();
+
+function isToday(y,m,d){
+  const n=new Date(); return n.getFullYear()===y&&n.getMonth()===m&&n.getDate()===d;
+}
+function isWeekend(y,m,d){ const dw=dayOfWeek(y,m,d); return dw===0||dw===6; }
+
+function fmtDate(s){
+  if(!s) return '—';
+  const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`;
+}
+function fmtMoney(n){
+  if(!n&&n!==0) return '—';
+  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+}
+function nightCount(s,e){
+  if(!s||!e) return 0;
+  return Math.round((new Date(e)-new Date(s))/(864e5));
+}
+
+// ═══════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════
+const KEY = 'detalo_v2';
+function save(){ localStorage.setItem(KEY,JSON.stringify(bookings)); }
+function load(){
+  try{ bookings=JSON.parse(localStorage.getItem(KEY)||'[]'); }
+  catch{ bookings=[]; }
+}
+
+// ═══════════════════════════════════════════
+// LÓGICA DE RESERVAS
+// ═══════════════════════════════════════════
+function bkForCell(pid,y,m,d){
+  const ds=dStr(y,m,d);
+  return bookings.find(b=>b.pid===pid&&ds>=b.s&&ds<=b.e)||null;
+}
+
+function isFirst(bk,y,m,d){
+  const ds=dStr(y,m,d), ms=dStr(y,m,1);
+  return bk.s===ds||(d===1&&bk.s<ms);
+}
+
+function isLast(bk,y,m,d){
+  const ds=dStr(y,m,d), total=daysInMonth(y,m), me=dStr(y,m,total);
+  return bk.e===ds||(d===total&&bk.e>me);
+}
+
+function hasOverlap(pid,s,e,excId){
+  return bookings.some(b=>{
+    if(b.pid!==pid) return false;
+    if(excId&&b.id===excId) return false;
+    return s<=b.e&&e>=b.s;
+  });
+}
+
+// ═══════════════════════════════════════════
+// RENDER CALENDARIO
+// ═══════════════════════════════════════════
+function renderCal(){
+  const total=daysInMonth(curY,curM);
+  let h='';
+
+  // Fila encabezado de días
+  h+=`<div class="day-hdr-row"><div class="corner"></div>`;
+  for(let d=1;d<=total;d++){
+    const wk=isWeekend(curY,curM,d);
+    const tod=isToday(curY,curM,d);
+    const dw=DAY_NAMES[dayOfWeek(curY,curM,d)];
+    h+=`<div class="day-th${wk?' wknd':''}${tod?' today-col':''}">
+      <span class="dn">${d}</span>
+      <span>${dw}</span>
+    </div>`;
+  }
+  h+='</div>';
+
+  // Grupos por destino
+  DESTINATIONS.forEach(dest=>{
+    const props=PROPS.filter(p=>p.dest===dest);
+    h+=`<div class="dest-hdr"><div class="dest-lbl">${dest}</div><div class="dest-fill"></div></div>`;
+
+    let curGrp=undefined;
+    props.forEach(prop=>{
+      if(prop.group!==curGrp){
+        if(curGrp&&!prop.group) h+=`<div class="grp-sep"></div>`;
+        curGrp=prop.group;
+        if(prop.group)
+          h+=`<div class="grp-hdr"><div class="grp-lbl">${prop.group}</div><div class="grp-fill"></div></div>`;
+      }
+      h+=`<div class="prop-row">`;
+      h+=`<div class="prop-name" title="${prop.name}">${prop.name}</div>`;
+
+      for(let d=1;d<=total;d++){
+        const bk=bkForCell(prop.id,curY,curM,d);
+        const wk=isWeekend(curY,curM,d);
+        const tod=isToday(curY,curM,d);
+        const ds=dStr(curY,curM,d);
+
+        let cls='dc';
+        if(wk) cls+=' wknd';
+        if(tod) cls+=' today-col';
+
+        let lbl='';
+        if(bk){
+          const isRes=bk.type==='reservation';
+          cls+=isRes?' res':' blk';
+          if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
+          if(isLast(bk,curY,curM,d))  cls+=' bk-end';
+          if(isFirst(bk,curY,curM,d)){
+            const txt=isRes?(bk.name||'Sin nombre'):'Bloqueado';
+            lbl=`<span class="bk-label ${isRes?'r':'b'}">${txt}</span>`;
+          }
+          h+=`<div class="${cls}" data-bk="${bk.id}" data-ds="${ds}" data-pid="${prop.id}">${lbl}</div>`;
+        } else {
+          h+=`<div class="${cls}" data-ds="${ds}" data-pid="${prop.id}"></div>`;
+        }
+      }
+      h+='</div>';
+    });
+  });
+
+  document.getElementById('calWrap').innerHTML=h;
+  attachCells();
+}
+
+function attachCells(){
+  document.querySelectorAll('.dc').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const bkId=el.dataset.bk;
+      if(bkId) openView(bkId);
+      else openForm(el.dataset.pid,el.dataset.ds);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// MODAL VER
+// ═══════════════════════════════════════════
+function openView(id){
+  activeId=id;
+  const bk=bookings.find(b=>b.id===id);
+  if(!bk) return;
+  const prop=PROPS.find(p=>p.id===bk.pid);
+  const isRes=bk.type==='reservation';
+  const nights=nightCount(bk.s,bk.e);
+
+  document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':'Detalle de Bloqueo';
+
+  let h=`<div class="badge ${isRes?'r':'b'}">${isRes?'🟢 Reserva':'🔴 Bloqueo por dueño'}</div>
+  <div class="dgrid">
+    <div class="di full">
+      <label>Propiedad</label>
+      <div class="val">${prop?prop.name:'—'}${prop&&prop.group?' &nbsp;·&nbsp; '+prop.group:''} &nbsp;·&nbsp; ${prop?prop.dest:''}</div>
+    </div>`;
+
+  if(isRes) h+=`
+    <div class="di"><label>Huésped</label><div class="val">${bk.name||'—'}</div></div>
+    <div class="di"><label>Teléfono</label><div class="val">${bk.phone||'—'}</div></div>`;
+
+  h+=`
+    <div class="di"><label>Entrada</label><div class="val">${fmtDate(bk.s)}</div></div>
+    <div class="di"><label>Salida</label><div class="val">${fmtDate(bk.e)}</div></div>
+    <div class="di"><label>Noches</label><div class="val">${nights} noche${nights!==1?'s':''}</div></div>`;
+
+  if(isRes) h+=`
+    <div class="di"><label>Ingreso bruto</label><div class="val">${bk.income?fmtMoney(bk.income):'—'}</div></div>
+    <div class="di"><label>Plataforma</label><div class="val">${bk.platform||'—'}</div></div>`;
+
+  if(bk.notes) h+=`
+    <div class="di full"><label>Notas</label><div class="val">${bk.notes}</div></div>`;
+
+  h+='</div>';
+  document.getElementById('viewBody').innerHTML=h;
+  document.getElementById('viewOv').classList.add('on');
+}
+
+function closeView(){
+  document.getElementById('viewOv').classList.remove('on');
+  activeId=null;
+}
+
+// ═══════════════════════════════════════════
+// MODAL FORMULARIO
+// ═══════════════════════════════════════════
+function openForm(pid,ds){
+  formType='reservation';
+  syncTypeBtns();
+  syncFormSections();
+
+  document.getElementById('fPropId').value=pid;
+  document.getElementById('fBkId').value='';
+  document.getElementById('fStart').value=ds;
+  document.getElementById('fEnd').value=ds;
+  document.getElementById('fName').value='';
+  document.getElementById('fPhone').value='';
+  document.getElementById('fIncome').value='';
+  document.getElementById('fPlatform').value='';
+  document.getElementById('fNotes').value='';
+
+  const prop=PROPS.find(p=>p.id===pid);
+  document.getElementById('formTitle').textContent=
+    'Nueva reserva'+(prop?` — ${prop.name}`:'');
+
+  document.getElementById('formOv').classList.add('on');
+  setTimeout(()=>document.getElementById('fName').focus(),120);
+}
+
+function closeForm(){
+  document.getElementById('formOv').classList.remove('on');
+}
+
+function syncTypeBtns(){
+  document.querySelectorAll('.tbtn').forEach(b=>{
+    b.classList.toggle('on', b.dataset.t===formType);
+  });
+  document.getElementById('fType').value=formType;
+}
+
+function syncFormSections(){
+  const show=formType==='reservation';
+  document.getElementById('guestSec').style.display=show?'':'none';
+  document.getElementById('incomeSec').style.display=show?'':'none';
+}
+
+function guardar(){
+  const pid  = document.getElementById('fPropId').value;
+  const bkId = document.getElementById('fBkId').value;
+  const s    = document.getElementById('fStart').value;
+  const e    = document.getElementById('fEnd').value;
+  const name = document.getElementById('fName').value.trim();
+
+  if(!s||!e){ alert('Ingresa las fechas de entrada y salida.'); return; }
+  if(s>e){ alert('La salida debe ser después de la entrada.'); return; }
+  if(formType==='reservation'&&!name){ alert('Ingresa el nombre del huésped.'); return; }
+  if(hasOverlap(pid,s,e,bkId||null)){
+    alert('Ya existe una reserva o bloqueo en esas fechas para esta propiedad.');
+    return;
+  }
+
+  const bk={
+    id: bkId||genId(),
+    pid,
+    type: formType,
+    name,
+    phone:    document.getElementById('fPhone').value.trim(),
+    s, e,
+    income:   parseFloat(document.getElementById('fIncome').value)||0,
+    platform: document.getElementById('fPlatform').value,
+    notes:    document.getElementById('fNotes').value.trim(),
+  };
+
+  if(bkId){
+    const i=bookings.findIndex(b=>b.id===bkId);
+    if(i>-1) bookings[i]=bk; else bookings.push(bk);
+  } else {
+    bookings.push(bk);
+  }
+
+  save();
+  closeForm();
+  renderCal();
+}
+
+function eliminar(id){
+  if(!confirm('¿Eliminar esta reserva?')) return;
+  bookings=bookings.filter(b=>b.id!==id);
+  save();
+  closeView();
+  renderCal();
+}
+
+// ═══════════════════════════════════════════
+// DATOS DE MUESTRA
+// ═══════════════════════════════════════════
+function loadSample(){
+  const y=curY, m=curM;
+  const d=(day)=>dStr(y,m,day);
+  const s=[
+    // Villa La Palma — Tequila
+    {pid:'tq1',type:'reservation',name:'María García',phone:'+52 33 1234 5678',s:d(3),e:d(6),income:4500,platform:'Airbnb',notes:'Llegada 3pm · 2 adultos'},
+    {pid:'tq1',type:'block',name:'',phone:'',s:d(18),e:d(20),income:0,platform:'',notes:'Mantenimiento'},
+    {pid:'tq2',type:'reservation',name:'Carlos Pérez',phone:'+52 33 8765 4321',s:d(5),e:d(9),income:6000,platform:'Booking.com',notes:''},
+    {pid:'tq3',type:'reservation',name:'Sofía Ramos',phone:'',s:d(12),e:d(15),income:3800,platform:'Directo',notes:''},
+    {pid:'tq5',type:'reservation',name:'Laura Mendoza',phone:'+52 33 5544 3322',s:d(1),e:d(4),income:5200,platform:'Airbnb',notes:'Familia'},
+    {pid:'tq7',type:'block',name:'',phone:'',s:d(10),e:d(12),income:0,platform:'',notes:'Uso dueño'},
+    {pid:'tq9',type:'reservation',name:'Pedro Ibarra',phone:'',s:d(22),e:d(25),income:4900,platform:'VRBO',notes:''},
+    // Cabañas Santa Fe — Tapalpa
+    {pid:'ta1',type:'reservation',name:'Ana Rodríguez',phone:'+52 33 5555 1234',s:d(2),e:d(5),income:3200,platform:'Directo',notes:''},
+    {pid:'ta1',type:'reservation',name:'Luis Hernández',phone:'',s:d(14),e:d(17),income:5500,platform:'Airbnb',notes:'3 adultos, 2 niños'},
+    {pid:'ta2',type:'block',name:'',phone:'',s:d(8),e:d(10),income:0,platform:'',notes:'Uso personal dueño'},
+    {pid:'ta3',type:'reservation',name:'Diego Vargas',phone:'+52 33 2222 3333',s:d(18),e:d(21),income:4100,platform:'VRBO',notes:''},
+    {pid:'ta5',type:'reservation',name:'Camila Torres',phone:'',s:d(4),e:d(7),income:3600,platform:'Airbnb',notes:''},
+    {pid:'ta6',type:'reservation',name:'Raúl Estrada',phone:'+52 33 9988 7766',s:d(20),e:d(23),income:4200,platform:'Booking.com',notes:''},
+    // Cabaña El Cielo — Tapalpa
+    {pid:'ta8',type:'reservation',name:'Valeria Cruz',phone:'+52 33 6677 8899',s:d(5),e:d(9),income:7500,platform:'Airbnb',notes:'Luna de miel'},
+    {pid:'ta8',type:'block',name:'',phone:'',s:d(22),e:d(25),income:0,platform:'',notes:'Mantenimiento'},
+    // Villas La Cumbre — Tapalpa
+    {pid:'ta9',name:'Santiago Flores',phone:'',type:'reservation',s:d(10),e:d(13),income:6000,platform:'Directo',notes:''},
+    {pid:'ta10',type:'reservation',name:'Mariana Ríos',phone:'+52 33 4455 6677',s:d(15),e:d(18),income:6400,platform:'Airbnb',notes:''},
+    // Mazamitla
+    {pid:'mz1',type:'reservation',name:'Sofía López',phone:'+52 33 9999 8888',s:d(2),e:d(5),income:4800,platform:'VRBO',notes:''},
+    {pid:'mz2',type:'reservation',name:'Roberto Martínez',phone:'',s:d(12),e:d(16),income:5200,platform:'Airbnb',notes:'Cumpleaños'},
+    {pid:'mz3',type:'block',name:'',phone:'',s:d(7),e:d(9),income:0,platform:'',notes:''},
+    {pid:'mz4',type:'reservation',name:'Fernanda Ruiz',phone:'',s:d(19),e:d(22),income:4300,platform:'Directo',notes:''},
+    // Nuevo Vallarta
+    {pid:'nv1',type:'reservation',name:'Patricia Sánchez',phone:'+52 322 111 2222',s:d(4),e:d(8),income:9500,platform:'Directo',notes:'Early check-in'},
+    {pid:'nv1',type:'block',name:'',phone:'',s:d(18),e:d(21),income:0,platform:'',notes:''},
+    // Guadalajara
+    {pid:'gd1',type:'reservation',name:'Fernando Jiménez',phone:'',s:d(1),e:d(3),income:2500,platform:'WhatsApp',notes:''},
+    {pid:'gd2',type:'reservation',name:'Isabella Morales',phone:'+52 33 4444 3333',s:d(14),e:d(17),income:3000,platform:'Airbnb',notes:''},
+    {pid:'gd3',type:'block',name:'',phone:'',s:d(20),e:d(25),income:0,platform:'',notes:'Renovación'},
+    {pid:'gd4',type:'reservation',name:'Alejandro Vega',phone:'+52 33 1122 3344',s:d(8),e:d(11),income:2800,platform:'Booking.com',notes:''},
+    // San Pedro Tesistán
+    {pid:'sp1',type:'reservation',name:'Valeria Ruiz',phone:'+52 33 7777 6666',s:d(7),e:d(10),income:3600,platform:'Facebook',notes:''},
+    {pid:'sp2',type:'reservation',name:'Andrés Moreno',phone:'',s:d(14),e:d(17),income:4200,platform:'WhatsApp',notes:''},
+    {pid:'sp3',type:'block',name:'',phone:'',s:d(3),e:d(5),income:0,platform:'',notes:'Uso dueño'},
+    {pid:'sp5',type:'reservation',name:'Daniela Herrera',phone:'+52 33 8833 4411',s:d(20),e:d(24),income:5800,platform:'Airbnb',notes:''},
+  ];
+  bookings=s.map(b=>({...b,id:genId()}));
+  save();
+}
+
+// ═══════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════
+function updateLabel(){
+  document.getElementById('monthLbl').textContent=
+    `${MONTH_NAMES[curM].charAt(0).toUpperCase()+MONTH_NAMES[curM].slice(1)} ${curY}`;
+}
+
+function goMonth(delta){
+  curM+=delta;
+  if(curM>11){curM=0;curY++;}
+  if(curM<0){curM=11;curY--;}
+  updateLabel();
+  renderCal();
+}
+
+function goHoy(){
+  const n=new Date();
+  curY=n.getFullYear(); curM=n.getMonth();
+  updateLabel();
+  renderCal();
+  setTimeout(()=>{
+    const t=document.querySelector('.day-th.today-col');
+    if(t) t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },120);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init(){
+  const n=new Date();
+  curY=n.getFullYear(); curM=n.getMonth();
+
+  load();
+  if(bookings.length===0) loadSample();
+
+  updateLabel();
+  renderCal();
+
+  setTimeout(()=>{
+    const t=document.querySelector('.day-th.today-col');
+    if(t) t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },200);
+
+  // Navegación
+  document.getElementById('btnPrev').addEventListener('click',()=>goMonth(-1));
+  document.getElementById('btnNext').addEventListener('click',()=>goMonth(1));
+  document.getElementById('btnHoy').addEventListener('click',goHoy);
+
+  // Fechas: auto-ajustar salida mínima al cambiar entrada
+  document.getElementById('fStart').addEventListener('change',function(){
+    const end=document.getElementById('fEnd');
+    if(end.value&&end.value<this.value) end.value=this.value;
+    end.min=this.value;
+  });
+
+  // Modal ver
+  document.getElementById('viewClose').addEventListener('click',closeView);
+  document.getElementById('btnViewCerrar').addEventListener('click',closeView);
+  document.getElementById('viewOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeView();});
+  document.getElementById('btnDel').addEventListener('click',()=>{if(activeId)eliminar(activeId);});
+
+  // Modal form
+  document.getElementById('formClose').addEventListener('click',closeForm);
+  document.getElementById('btnFormCerrar').addEventListener('click',closeForm);
+  document.getElementById('formOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeForm();});
+  document.getElementById('btnGuardar').addEventListener('click',guardar);
+
+  // Selector de tipo
+  document.querySelectorAll('.tbtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      formType=btn.dataset.t;
+      syncTypeBtns();
+      syncFormSections();
+      if(formType==='reservation')
+        setTimeout(()=>document.getElementById('fName').focus(),60);
+    });
+  });
+
+  // ESC cierra modales
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closeView();closeForm();}
+  });
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

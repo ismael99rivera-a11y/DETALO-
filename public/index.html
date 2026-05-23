@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Detalo — Gestión Vacacional</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh}
+:root{
+  --res-bg:#bbf7d0;--res-fg:#14532d;--res-bdr:#22c55e;
+  --blk-bg:#fecaca;--blk-fg:#7f1d1d;--blk-bdr:#ef4444;
+  --ical-bg:#fee2e2;--ical-fg:#92400e;--ical-bdr:#f97316;
+  --cell-w:38px;--cell-h:36px;--prop-w:175px;
+}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── HEADER ── */
+.app-hdr{
+  height:60px;background:#0f172a;color:#fff;
+  display:flex;align-items:center;padding:0 20px;gap:14px;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.4);z-index:200
+}
+.logo{font-size:1.4rem;font-weight:800;letter-spacing:-.5px;color:#38bdf8}
+.logo span{color:#fff}
+.legend{display:flex;gap:14px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#94a3b8}
+.leg-dot{width:10px;height:10px;border-radius:2px}
+.leg-dot.r{background:#22c55e}.leg-dot.b{background:#ef4444}.leg-dot.ic{background:#f97316}.leg-dot.a{background:#475569;opacity:.4}
+.month-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
+.nav-btn{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  color:#fff;width:30px;height:30px;border-radius:6px;cursor:pointer;
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:background .15s
+}
+.nav-btn:hover{background:rgba(255,255,255,.22)}
+.month-lbl{font-size:.95rem;font-weight:600;min-width:170px;text-align:center;text-transform:capitalize}
+.btn-hoy{
+  background:#0ea5e9;border:none;color:#fff;padding:6px 14px;
+  border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;transition:background .15s
+}
+.btn-hoy:hover{background:#0284c7}
+
+/* Sync chip */
+.sync-chip{
+  display:flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:20px;font-size:.72rem;font-weight:600;cursor:default;
+  white-space:nowrap;border:1px solid transparent;transition:all .3s
+}
+.sync-chip.idle  {background:rgba(255,255,255,.07);color:#64748b;border-color:rgba(255,255,255,.1)}
+.sync-chip.ok    {background:rgba(34,197,94,.15);color:#4ade80;border-color:rgba(34,197,94,.3)}
+.sync-chip.err   {background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.3)}
+.sync-chip.running{background:rgba(14,165,233,.15);color:#38bdf8;border-color:rgba(14,165,233,.3)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+
+/* Settings button */
+.btn-settings{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  color:#94a3b8;padding:5px 12px;border-radius:6px;cursor:pointer;
+  font-size:.78rem;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:6px
+}
+.btn-settings:hover{background:rgba(255,255,255,.18);color:#e2e8f0}
+
+/* ── CALENDAR SHELL ── */
+.cal-shell{flex:1;overflow:auto;position:relative}
+.cal-shell::-webkit-scrollbar{width:7px;height:7px}
+.cal-shell::-webkit-scrollbar-track{background:#e2e8f0}
+.cal-shell::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
+.cal-wrap{min-width:max-content}
+
+/* ── DAY HEADER ── */
+.day-hdr-row{display:flex;position:sticky;top:0;z-index:90;background:#f8fafc;border-bottom:2px solid #cbd5e1}
+.corner{width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;position:sticky;left:0;z-index:95;background:#f8fafc;border-right:2px solid #cbd5e1}
+.day-th{width:var(--cell-w);min-width:var(--cell-w);height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.65rem;color:#64748b;border-right:1px solid #e2e8f0;flex-shrink:0}
+.day-th .dn{font-size:.78rem;font-weight:700}
+.day-th.wknd{background:#fafafe}
+.day-th.today-col .dn{color:#0ea5e9}
+.day-th.today-col{background:#f0f9ff}
+
+/* ── DESTINATION HEADER ── */
+.dest-hdr{display:flex;background:#1e293b}
+.dest-lbl{width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;height:26px;display:flex;align-items:center;padding:0 12px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7dd3fc;background:#1e293b;position:sticky;left:0;z-index:70;border-right:2px solid #0f172a}
+.dest-fill{flex:1;background:#1e293b;border-bottom:1px solid #0f172a}
+
+/* ── GROUP SUB-HEADER ── */
+.grp-hdr{display:flex;background:#293548}
+.grp-lbl{width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;height:21px;display:flex;align-items:center;padding:0 16px;font-size:.67rem;font-weight:600;font-style:italic;color:#7dd3fc;background:#293548;position:sticky;left:0;z-index:60;border-right:2px solid #1e293b}
+.grp-fill{flex:1;background:#293548;border-bottom:1px solid #1e293b}
+.grp-sep{height:3px;background:#dde3ea;border-bottom:1px solid #c8d0db}
+
+/* ── PROPERTY ROW ── */
+.prop-row{display:flex;border-bottom:1px solid #e9edf2}
+.prop-name{width:var(--prop-w);min-width:var(--prop-w);flex-shrink:0;height:var(--cell-h);display:flex;align-items:center;padding:0 10px 0 14px;font-size:.78rem;font-weight:500;color:#475569;background:#fcfcfd;border-right:2px solid #cbd5e1;position:sticky;left:0;z-index:50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .1s}
+.prop-row:hover .prop-name{background:#f0f9ff}
+
+/* ── DAY CELL ── */
+.dc{width:var(--cell-w);min-width:var(--cell-w);height:var(--cell-h);flex-shrink:0;border-right:1px solid #f1f5f9;position:relative;cursor:pointer;background:#fff;overflow:hidden;transition:background .1s}
+.dc:hover{background:#f0f9ff}
+.dc.wknd{background:#fafafe}.dc.wknd:hover{background:#f0f4ff}
+.dc.today-col{background:#f0f9ff}
+.dc.today-col::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#0ea5e9}
+
+/* ── BOOKING CELLS ── */
+.dc.res{background:var(--res-bg)}.dc.res:hover{background:#86efac}
+.dc.blk{background:var(--blk-bg)}.dc.blk:hover{background:#fca5a5}
+.dc.icalblk{background:var(--ical-bg)}.dc.icalblk:hover{background:#fdba74}
+
+.dc.bk-start{border-left:3px solid}
+.dc.res.bk-start{border-left-color:var(--res-bdr)}
+.dc.blk.bk-start,.dc.icalblk.bk-start{border-left-color:var(--blk-bdr)}
+.dc.bk-end{border-right:2px solid}
+.dc.res.bk-end{border-right-color:var(--res-bdr)}
+.dc.blk.bk-end,.dc.icalblk.bk-end{border-right-color:var(--blk-bdr)}
+
+.bk-label{position:absolute;top:50%;left:5px;right:3px;transform:translateY(-50%);font-size:.66rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1}
+.bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.overlay.on{display:flex}
+.mbox{background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);width:500px;max-width:calc(100vw - 32px);max-height:calc(100vh - 60px);overflow-y:auto;animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:translateY(-14px) scale(.97)}to{opacity:1;transform:none}}
+.mhdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #e2e8f0}
+.mtitle{font-size:1rem;font-weight:700;color:#0f172a}
+.mclose{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1.3rem;line-height:1;padding:4px 6px;border-radius:5px;transition:all .15s}
+.mclose:hover{color:#475569;background:#f1f5f9}
+.mbody{padding:22px}
+.mfoot{padding:14px 22px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end}
+
+/* ── DETAIL VIEW ── */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 13px;border-radius:20px;font-size:.78rem;font-weight:700;margin-bottom:18px}
+.badge.r{background:var(--res-bg);color:var(--res-fg)}
+.badge.b{background:var(--blk-bg);color:var(--blk-fg)}
+.badge.ic{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.di label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:3px}
+.di .val{font-size:.88rem;font-weight:600;color:#1e293b}
+.di.full{grid-column:1/-1}
+
+/* ── FORM ── */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:.78rem;font-weight:600;color:#475569;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:.88rem;color:#1e293b;background:#fff;transition:border-color .15s,box-shadow .15s;font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)}
+.fg textarea{resize:vertical;min-height:66px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.type-sel{display:flex;gap:10px}
+.tbtn{flex:1;padding:8px 6px;border-radius:8px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;font-size:.83rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
+.tbtn.r{color:var(--res-fg)}.tbtn.b{color:var(--blk-fg)}
+.tbtn.on.r{background:var(--res-bg);border-color:var(--res-bdr)}
+.tbtn.on.b{background:var(--blk-bg);border-color:var(--blk-bdr)}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 18px;border-radius:8px;border:none;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-pri{background:#0ea5e9;color:#fff}.btn-pri:hover{background:#0284c7}
+.btn-del{background:#ef4444;color:#fff}.btn-del:hover{background:#dc2626}
+.btn-sec{background:#f1f5f9;color:#475569}.btn-sec:hover{background:#e2e8f0}
+.req{color:#ef4444}
+
+/* ── SETTINGS MODAL ── */
+.settings-box{width:760px}
+.stabs{display:flex;border-bottom:2px solid #e2e8f0;padding:0 22px;margin:-22px -22px 20px}
+.stab{padding:12px 18px;border:none;background:none;font-size:.85rem;font-weight:600;color:#94a3b8;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.stab.on{color:#0ea5e9;border-bottom-color:#0ea5e9}
+
+/* Sources list */
+.src-add{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:20px}
+.src-add h4{font-size:.8rem;font-weight:700;color:#475569;margin-bottom:12px}
+.src-list{display:flex;flex-direction:column;gap:8px}
+.src-item{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px}
+.si-prop{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.si-plat{font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:4px;background:#f0fdf4;color:#166534;white-space:nowrap}
+.si-url{flex:1;font-size:.72rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace}
+.si-ok{font-size:.72rem;color:#16a34a;white-space:nowrap}
+.si-err{font-size:.72rem;color:#dc2626;white-space:nowrap;cursor:help}
+.si-pend{font-size:.72rem;color:#94a3b8;white-space:nowrap}
+.src-empty{text-align:center;color:#94a3b8;padding:24px;font-size:.85rem;background:#f8fafc;border:1px dashed #e2e8f0;border-radius:8px}
+
+/* Output table */
+.out-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.out-tbl th{text-align:left;padding:8px 10px;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+.out-tbl td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.out-tbl .url-txt{font-family:monospace;font-size:.7rem;color:#64748b;display:block;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-copy{background:none;border:1px solid #e2e8f0;padding:3px 9px;border-radius:5px;cursor:pointer;font-size:.72rem;color:#64748b;transition:all .15s;white-space:nowrap}
+.btn-copy:hover{background:#f0f9ff;border-color:#7dd3fc;color:#0369a1}
+.btn-copy.ok{background:#f0fdf4;border-color:#86efac;color:#16a34a}
+
+/* Settings footer */
+.mfoot-sb{padding:14px 22px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.s-sync-info{font-size:.78rem;color:#64748b}
+
+/* Unit selector */
+.unit-sel{display:flex;gap:5px}
+.ubtn{width:34px;height:32px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;color:#64748b}
+.ubtn:hover{border-color:#0ea5e9;color:#0284c7}
+.ubtn.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
+.si-units{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#1d4ed8;white-space:nowrap;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="app-hdr">
+    <div class="logo">Deta<span>lo</span></div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot r"></div>Reserva</div>
+      <div class="leg-item"><div class="leg-dot b"></div>Bloqueo</div>
+      <div class="leg-item"><div class="leg-dot ic"></div>iCal</div>
+      <div class="leg-item"><div class="leg-dot a"></div>Disponible</div>
+    </div>
+    <div id="syncChip" class="sync-chip idle" title="Estado de sincronización iCal">⏸ Sin fuentes</div>
+    <button class="btn-settings" id="btnSettings">⚙ Sincronización</button>
+    <div class="month-nav">
+      <button class="nav-btn" id="btnPrev">&#8249;</button>
+      <div class="month-lbl" id="monthLbl"></div>
+      <button class="nav-btn" id="btnNext">&#8250;</button>
+      <button class="btn-hoy" id="btnHoy">Hoy</button>
+    </div>
+  </header>
+
+  <div class="cal-shell" id="calShell">
+    <div class="cal-wrap" id="calWrap">
+      <div style="padding:40px;text-align:center;color:#94a3b8;font-size:.9rem">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL VER RESERVA ═══ -->
+<div class="overlay" id="viewOv">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mtitle" id="viewTitle">Detalle</div>
+      <button class="mclose" id="viewClose">&#215;</button>
+    </div>
+    <div class="mbody" id="viewBody"></div>
+    <div class="mfoot" id="viewFoot">
+      <button class="btn btn-del" id="btnDel">Eliminar</button>
+      <button class="btn btn-sec" id="btnViewCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CREAR RESERVA ═══ -->
+<div class="overlay" id="formOv">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mtitle" id="formTitle">Nueva Reserva</div>
+      <button class="mclose" id="formClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <form id="bkForm" novalidate>
+        <div class="fg">
+          <label>Tipo</label>
+          <div class="type-sel">
+            <button type="button" class="tbtn r on" data-t="reservation">🟢 Reserva</button>
+            <button type="button" class="tbtn b" data-t="block">🔴 Bloqueo</button>
+          </div>
+          <input type="hidden" id="fType" value="reservation">
+        </div>
+        <div id="guestSec">
+          <div class="frow">
+            <div class="fg"><label>Nombre huésped <span class="req">*</span></label><input type="text" id="fName" placeholder="Nombre completo"></div>
+            <div class="fg"><label>Teléfono</label><input type="tel" id="fPhone" placeholder="+52 33 0000 0000"></div>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label>Entrada <span class="req">*</span></label><input type="date" id="fStart"></div>
+          <div class="fg"><label>Salida <span class="req">*</span></label><input type="date" id="fEnd"></div>
+        </div>
+        <div id="incomeSec">
+          <div class="frow">
+            <div class="fg"><label>Ingreso bruto ($)</label><input type="number" id="fIncome" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg">
+              <label>Plataforma</label>
+              <select id="fPlatform">
+                <option value="">Seleccionar…</option>
+                <option>Airbnb</option><option>Booking.com</option><option>VRBO</option>
+                <option>Directo</option><option>Facebook</option><option>WhatsApp</option><option>Otro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="fg"><label>Notas</label><textarea id="fNotes" placeholder="Peticiones especiales, notas adicionales…"></textarea></div>
+        <input type="hidden" id="fPropId">
+        <input type="hidden" id="fBkId">
+      </form>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="btnFormCerrar">Cancelar</button>
+      <button class="btn btn-pri" id="btnGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SINCRONIZACIÓN ═══ -->
+<div class="overlay" id="settingsOv">
+  <div class="mbox settings-box">
+    <div class="mhdr">
+      <div class="mtitle">⚙ Sincronización iCal</div>
+      <button class="mclose" id="settingsClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <div class="stabs" id="stabs">
+        <button class="stab on" data-tab="import">📥 Fuentes de importación</button>
+        <button class="stab"    data-tab="export">📤 URLs de exportación</button>
+      </div>
+      <div id="settingsBody"></div>
+    </div>
+    <div class="mfoot-sb">
+      <div class="s-sync-info" id="sSyncInfo">—</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-sec" id="btnSyncNow">🔄 Sincronizar ahora</button>
+        <button class="btn btn-sec" id="settingsCerrar">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATOS ESTÁTICOS
+// ═══════════════════════════════════════════
+const DESTINATIONS = ['Tequila','Tapalpa','Mazamitla','Nuevo Vallarta','Guadalajara','San Pedro Tesistán'];
+
+const PROPS = [
+  {id:'tq1',name:'Villa 1',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq2',name:'Villa 2',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq3',name:'Villa 3',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq4',name:'Villa 4',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq5',name:'Villa 5',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq6',name:'Villa 6',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq7',name:'Villa 7',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq8',name:'Villa 8',dest:'Tequila',group:'Villa La Palma'},
+  {id:'tq9',name:'Villa 9',dest:'Tequila',group:'Villa La Palma'},
+  {id:'ta1',name:'Cabaña Lobo',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta2',name:'Cabaña Ciervo',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta3',name:'Cabaña Oso',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta4',name:'Cabaña Tigre',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta5',name:'Cabaña Puma',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta6',name:'Cabaña Venado',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta7',name:'Cabaña Lince',dest:'Tapalpa',group:'Cabañas Santa Fe'},
+  {id:'ta8',name:'Cabaña El Cielo',dest:'Tapalpa',group:'Cabaña El Cielo'},
+  {id:'ta9',name:'Villa 1',dest:'Tapalpa',group:'Villas La Cumbre'},
+  {id:'ta10',name:'Villa 2',dest:'Tapalpa',group:'Villas La Cumbre'},
+  {id:'mz1',name:'Cabaña Grande',dest:'Mazamitla',group:null},
+  {id:'mz2',name:'Esmeralda 1',dest:'Mazamitla',group:'Villas La Esmeralda'},
+  {id:'mz3',name:'Esmeralda 2',dest:'Mazamitla',group:'Villas La Esmeralda'},
+  {id:'mz4',name:'Esmeralda 3',dest:'Mazamitla',group:'Villas La Esmeralda'},
+  {id:'nv1',name:'Riviera Capri',dest:'Nuevo Vallarta',group:null},
+  {id:'gd1',name:'Solares Liva',dest:'Guadalajara',group:null},
+  {id:'gd2',name:'Solares Soare',dest:'Guadalajara',group:null},
+  {id:'gd3',name:'Casita Azul',dest:'Guadalajara',group:null},
+  {id:'gd4',name:'Xima Diana',dest:'Guadalajara',group:null},
+  {id:'sp5',name:'Casa de Campo',dest:'San Pedro Tesistán',group:null},
+  {id:'sp1',name:'Depto 1',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+  {id:'sp2',name:'Depto 2',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+  {id:'sp3',name:'Depto 3',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+  {id:'sp4',name:'Depto 4',dest:'San Pedro Tesistán',group:'Departamentos San Pedro'},
+];
+
+const DAY_NAMES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+const MONTH_NAMES = ['enero','febrero','marzo','abril','mayo','junio',
+  'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+// ═══════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════
+let bookings  = [];
+let sources   = [];
+let curY, curM;
+let activeId  = null;
+let formType  = 'reservation';
+let settingsTab = 'import';
+
+// ═══════════════════════════════════════════
+// UTILIDADES
+// ═══════════════════════════════════════════
+const pad2        = n => String(n).padStart(2,'0');
+const dStr        = (y,m,d) => `${y}-${pad2(m+1)}-${pad2(d)}`;
+const daysInMonth = (y,m) => new Date(y,m+1,0).getDate();
+const dayOfWeek   = (y,m,d) => new Date(y,m,d).getDay();
+
+function isToday(y,m,d){ const n=new Date(); return n.getFullYear()===y&&n.getMonth()===m&&n.getDate()===d; }
+function isWeekend(y,m,d){ const w=dayOfWeek(y,m,d); return w===0||w===6; }
+function fmtDate(s){ if(!s)return'—'; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; }
+function fmtMoney(n){ return n?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n):'—'; }
+function nightCount(s,e){ return(!s||!e)?0:Math.round((new Date(e)-new Date(s))/864e5); }
+function fmtTime(iso){ return iso?new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):''; }
+
+// ═══════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = { method, headers:{} };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  return r.json();
+}
+
+async function refreshBookings() {
+  bookings = await api('GET', '/api/bookings');
+}
+
+// ═══════════════════════════════════════════
+// LÓGICA DE RESERVAS
+// ═══════════════════════════════════════════
+function bkForCell(pid,y,m,d){
+  const ds=dStr(y,m,d);
+  return bookings.find(b=>b.pid===pid&&ds>=b.s&&ds<=b.e)||null;
+}
+function isFirst(bk,y,m,d){
+  const ds=dStr(y,m,d),ms=dStr(y,m,1);
+  return bk.s===ds||(d===1&&bk.s<ms);
+}
+function isLast(bk,y,m,d){
+  const ds=dStr(y,m,d),total=daysInMonth(y,m),me=dStr(y,m,total);
+  return bk.e===ds||(d===total&&bk.e>me);
+}
+function hasOverlap(pid,s,e,excId){
+  return bookings.some(b=>{
+    if(b.pid!==pid) return false;
+    if(excId&&b.id===excId) return false;
+    return s<=b.e&&e>=b.s;
+  });
+}
+
+// ═══════════════════════════════════════════
+// RENDER CALENDARIO
+// ═══════════════════════════════════════════
+function renderCal(){
+  const total=daysInMonth(curY,curM);
+  let h='';
+
+  h+=`<div class="day-hdr-row"><div class="corner"></div>`;
+  for(let d=1;d<=total;d++){
+    const wk=isWeekend(curY,curM,d),tod=isToday(curY,curM,d);
+    h+=`<div class="day-th${wk?' wknd':''}${tod?' today-col':''}">
+      <span class="dn">${d}</span><span>${DAY_NAMES[dayOfWeek(curY,curM,d)]}</span></div>`;
+  }
+  h+='</div>';
+
+  DESTINATIONS.forEach(dest=>{
+    const props=PROPS.filter(p=>p.dest===dest);
+    h+=`<div class="dest-hdr"><div class="dest-lbl">${dest}</div><div class="dest-fill"></div></div>`;
+    let curGrp=undefined;
+    props.forEach(prop=>{
+      if(prop.group!==curGrp){
+        if(curGrp&&!prop.group) h+=`<div class="grp-sep"></div>`;
+        curGrp=prop.group;
+        if(prop.group) h+=`<div class="grp-hdr"><div class="grp-lbl">${prop.group}</div><div class="grp-fill"></div></div>`;
+      }
+      h+=`<div class="prop-row"><div class="prop-name" title="${prop.name}">${prop.name}</div>`;
+      for(let d=1;d<=total;d++){
+        const bk=bkForCell(prop.id,curY,curM,d);
+        const wk=isWeekend(curY,curM,d),tod=isToday(curY,curM,d);
+        const ds=dStr(curY,curM,d);
+        let cls='dc',lbl='';
+        if(wk) cls+=' wknd';
+        if(tod) cls+=' today-col';
+        if(bk){
+          const isRes=bk.type==='reservation';
+          const isIcal=bk.type==='ical-block';
+          cls+=isRes?' res':isIcal?' icalblk':' blk';
+          if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
+          if(isLast(bk,curY,curM,d))  cls+=' bk-end';
+          if(isFirst(bk,curY,curM,d)){
+            const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):'Bloqueado';
+            const cc=isRes?'r':isIcal?'ic':'b';
+            lbl=`<span class="bk-label ${cc}">${txt}</span>`;
+          }
+          h+=`<div class="${cls}" data-bk="${bk.id}" data-ds="${ds}" data-pid="${prop.id}">${lbl}</div>`;
+        } else {
+          h+=`<div class="${cls}" data-ds="${ds}" data-pid="${prop.id}"></div>`;
+        }
+      }
+      h+='</div>';
+    });
+  });
+
+  document.getElementById('calWrap').innerHTML=h;
+  document.querySelectorAll('.dc').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const bkId=el.dataset.bk;
+      if(bkId) openView(bkId);
+      else     openForm(el.dataset.pid, el.dataset.ds);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// MODAL VER
+// ═══════════════════════════════════════════
+function openView(id){
+  activeId=id;
+  const bk=bookings.find(b=>b.id===id);
+  if(!bk) return;
+  const prop=PROPS.find(p=>p.id===bk.pid);
+  const isRes=bk.type==='reservation';
+  const isIcal=bk.type==='ical-block';
+  const nights=nightCount(bk.s,bk.e);
+  document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':isIcal?'Bloqueo iCal':'Detalle de Bloqueo';
+  const badge=isRes?'🟢 Reserva':isIcal?'🔗 Importado de iCal':'🔴 Bloqueo por dueño';
+  const bc=isRes?'r':isIcal?'ic':'b';
+  let h=`<div class="badge ${bc}">${badge}</div><div class="dgrid">
+    <div class="di full"><label>Propiedad</label>
+      <div class="val">${prop?prop.name:'—'}${prop&&prop.group?' · '+prop.group:''} · ${prop?prop.dest:''}</div></div>`;
+  if(isRes) h+=`<div class="di"><label>Huésped</label><div class="val">${bk.name||'—'}</div></div>
+    <div class="di"><label>Teléfono</label><div class="val">${bk.phone||'—'}</div></div>`;
+  if(isIcal) h+=`<div class="di"><label>Fuente</label><div class="val">${bk.platform||'iCal'}</div></div>
+    <div class="di"><label>Sincronizado</label><div class="val">${fmtTime(bk.syncedAt)||'—'}</div></div>`;
+  h+=`<div class="di"><label>Entrada</label><div class="val">${fmtDate(bk.s)}</div></div>
+    <div class="di"><label>Salida</label><div class="val">${fmtDate(bk.e)}</div></div>
+    <div class="di"><label>Noches</label><div class="val">${nights} noche${nights!==1?'s':''}</div></div>`;
+  if(isRes) h+=`<div class="di"><label>Ingreso bruto</label><div class="val">${fmtMoney(bk.income)}</div></div>
+    <div class="di"><label>Plataforma</label><div class="val">${bk.platform||'—'}</div></div>`;
+  if(bk.notes) h+=`<div class="di full"><label>Notas</label><div class="val">${bk.notes}</div></div>`;
+  h+='</div>';
+  document.getElementById('viewBody').innerHTML=h;
+  // Ocultar botón eliminar para bloques iCal (se gestionan automáticamente)
+  document.getElementById('btnDel').style.display = isIcal ? 'none' : '';
+  document.getElementById('viewOv').classList.add('on');
+}
+function closeView(){ document.getElementById('viewOv').classList.remove('on'); activeId=null; }
+
+// ═══════════════════════════════════════════
+// MODAL FORMULARIO
+// ═══════════════════════════════════════════
+function openForm(pid,ds){
+  formType='reservation';
+  syncTypeBtns(); syncFormSections();
+  ['fPropId','fBkId'].forEach((id,i)=>document.getElementById(id).value=i?'':pid);
+  document.getElementById('fStart').value=ds;
+  document.getElementById('fEnd').value=ds;
+  ['fName','fPhone','fIncome','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fPlatform').value='';
+  const prop=PROPS.find(p=>p.id===pid);
+  document.getElementById('formTitle').textContent='Nueva reserva'+(prop?` — ${prop.name}`:'');
+  document.getElementById('formOv').classList.add('on');
+  setTimeout(()=>document.getElementById('fName').focus(),120);
+}
+function closeForm(){ document.getElementById('formOv').classList.remove('on'); }
+
+function syncTypeBtns(){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.toggle('on', b.dataset.t===formType));
+  document.getElementById('fType').value=formType;
+}
+function syncFormSections(){
+  const show=formType==='reservation';
+  document.getElementById('guestSec').style.display=show?'':'none';
+  document.getElementById('incomeSec').style.display=show?'':'none';
+}
+
+async function guardar(){
+  const pid  =document.getElementById('fPropId').value;
+  const bkId =document.getElementById('fBkId').value;
+  const s    =document.getElementById('fStart').value;
+  const e    =document.getElementById('fEnd').value;
+  const name =document.getElementById('fName').value.trim();
+  if(!s||!e){ alert('Ingresa las fechas de entrada y salida.'); return; }
+  if(s>e){ alert('La salida debe ser después de la entrada.'); return; }
+  if(formType==='reservation'&&!name){ alert('Ingresa el nombre del huésped.'); return; }
+  if(hasOverlap(pid,s,e,bkId||null)){ alert('Ya existe una reserva o bloqueo en esas fechas para esta propiedad.'); return; }
+  const bk={
+    pid, type:formType, name,
+    phone:   document.getElementById('fPhone').value.trim(),
+    s, e,
+    income:  parseFloat(document.getElementById('fIncome').value)||0,
+    platform:document.getElementById('fPlatform').value,
+    notes:   document.getElementById('fNotes').value.trim(),
+  };
+  try {
+    if(bkId){ await api('PUT',`/api/bookings/${bkId}`,{...bk,id:bkId}); }
+    else     { await api('POST','/api/bookings',bk); }
+    await refreshBookings();
+    closeForm(); renderCal();
+  } catch(err){ alert('Error al guardar: '+err.message); }
+}
+
+async function eliminar(id){
+  if(!confirm('¿Eliminar esta reserva?')) return;
+  try {
+    await api('DELETE',`/api/bookings/${id}`);
+    await refreshBookings();
+    closeView(); renderCal();
+  } catch(err){ alert('Error al eliminar: '+err.message); }
+}
+
+// ═══════════════════════════════════════════
+// SYNC STATUS (header chip)
+// ═══════════════════════════════════════════
+async function updateSyncChip(){
+  try {
+    const st=await api('GET','/api/sync/status');
+    const chip=document.getElementById('syncChip');
+    sources=st.sources||[];
+    if(st.running){
+      chip.className='sync-chip running';
+      chip.innerHTML='<span class="spin">🔄</span> Sincronizando…';
+    } else if(!sources.length){
+      chip.className='sync-chip idle';chip.textContent='⏸ Sin fuentes';
+    } else {
+      const anyErr=sources.some(s=>s.lastStatus==='error');
+      const allOk=sources.every(s=>s.lastStatus==='ok');
+      if(anyErr){ chip.className='sync-chip err'; chip.textContent='⚠ Error en sync'; }
+      else if(allOk&&st.lastRun){
+        chip.className='sync-chip ok';
+        chip.textContent=`✓ Sync ${fmtTime(st.lastRun)}`;
+      } else { chip.className='sync-chip idle'; chip.textContent='⏸ Sin sync'; }
+    }
+  } catch{ /* servidor no disponible */ }
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS — PANEL PRINCIPAL
+// ═══════════════════════════════════════════
+async function openSettings(){
+  try { const st=await api('GET','/api/sync/status'); sources=st.sources||[]; }
+  catch{ sources=[]; }
+  renderSettingsTab();
+  updateSSettingsInfo();
+  document.getElementById('settingsOv').classList.add('on');
+}
+function closeSettings(){ document.getElementById('settingsOv').classList.remove('on'); }
+
+function updateSSettingsInfo(){
+  const inf=document.getElementById('sSyncInfo');
+  const last=sources.find(s=>s.lastSync);
+  inf.textContent = last ? `Última sincronización: ${fmtTime(last.lastSync)}` : 'Sin sincronizaciones recientes';
+}
+
+function renderSettingsTab(){
+  document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('on',b.dataset.tab===settingsTab));
+  if(settingsTab==='import') renderImportTab();
+  else renderExportTab();
+}
+
+// ── TAB IMPORTAR ─────────────────────────
+function renderImportTab(){
+  const propOpts = DESTINATIONS.map(dest=>{
+    const ps=PROPS.filter(p=>p.dest===dest);
+    return `<optgroup label="${dest}">${
+      ps.map(p=>`<option value="${p.id}">${p.name}${p.group?' ('+p.group+')':''}</option>`).join('')
+    }</optgroup>`;
+  }).join('');
+
+  const srcRows = sources.length
+    ? sources.map(src=>{
+        const ids = src.propIds && src.propIds.length ? src.propIds : [src.propId];
+        const pNames = ids.map(pid=>{
+          const p=PROPS.find(x=>x.id===pid);
+          return p ? p.name : pid;
+        }).join(' + ');
+        const destLabel = (()=>{ const p=PROPS.find(x=>x.id===ids[0]); return p?p.dest:''; })();
+        const uds = src.unidades || ids.length;
+        let status='';
+        if(src.lastStatus==='ok')
+          status=`<span class="si-ok" title="${src.importedCount||0} eventos">✓ ${fmtTime(src.lastSync)} (${src.importedCount||0})</span>`;
+        else if(src.lastStatus==='error')
+          status=`<span class="si-err" title="${src.lastError}">✗ Error</span>`;
+        else
+          status=`<span class="si-pend">Pendiente</span>`;
+        return `<div class="src-item">
+          <span class="si-prop" title="${pNames} — ${destLabel}">${pNames}</span>
+          ${uds>1?`<span class="si-units">${uds} uds.</span>`:''}
+          <span class="si-plat">${src.platform||'—'}</span>
+          <span class="si-url" title="${src.url}">${src.url}</span>
+          ${status}
+          <button class="btn btn-del" style="padding:4px 10px;font-size:.75rem;flex-shrink:0" onclick="removeSource('${src.id}')">🗑</button>
+        </div>`;
+      }).join('')
+    : '<div class="src-empty">No hay fuentes configuradas.<br>Agrega una URL de iCal para empezar a sincronizar.</div>';
+
+  document.getElementById('settingsBody').innerHTML=`
+    <div class="src-add">
+      <h4>Agregar nueva fuente iCal</h4>
+      <div class="frow">
+        <div class="fg"><label>Plataforma</label>
+          <select id="srcPlatform">
+            <option value="">Seleccionar…</option>
+            <option>Airbnb</option><option>Booking.com</option><option>VRBO</option><option>Otro</option>
+          </select></div>
+        <div class="fg"><label>Unidades que ocupa</label>
+          <div class="unit-sel" id="unitSel">
+            <button type="button" class="ubtn on" data-u="1">1</button>
+            <button type="button" class="ubtn" data-u="2">2</button>
+            <button type="button" class="ubtn" data-u="3">3</button>
+          </div>
+          <input type="hidden" id="srcUnidades" value="1">
+        </div>
+      </div>
+      <div class="fg"><label>1ª unidad</label>
+        <select id="srcProp1"><option value="">Seleccionar…</option>${propOpts}</select></div>
+      <div class="fg" id="prop2Fg" style="display:none"><label>2ª unidad</label>
+        <select id="srcProp2"><option value="">Seleccionar…</option>${propOpts}</select></div>
+      <div class="fg" id="prop3Fg" style="display:none"><label>3ª unidad</label>
+        <select id="srcProp3"><option value="">Seleccionar…</option>${propOpts}</select></div>
+      <div class="fg"><label>URL del calendario iCal</label>
+        <input type="url" id="srcUrl" placeholder="https://www.airbnb.com/calendar/ical/…"></div>
+      <button class="btn btn-pri" id="btnAddSrc" style="width:100%">+ Agregar fuente</button>
+    </div>
+    <div class="src-list" id="srcListEl">${srcRows}</div>`;
+
+  // Selector de unidades
+  document.querySelectorAll('.ubtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.ubtn').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      const u=parseInt(btn.dataset.u);
+      document.getElementById('srcUnidades').value=u;
+      document.getElementById('prop2Fg').style.display=u>=2?'':'none';
+      document.getElementById('prop3Fg').style.display=u>=3?'':'none';
+    });
+  });
+
+  document.getElementById('btnAddSrc').addEventListener('click', addSource);
+}
+
+async function addSource(){
+  const unidades= parseInt(document.getElementById('srcUnidades').value)||1;
+  const prop1   = document.getElementById('srcProp1').value;
+  const prop2   = document.getElementById('srcProp2')?.value||'';
+  const prop3   = document.getElementById('srcProp3')?.value||'';
+  const platform= document.getElementById('srcPlatform').value;
+  const url     = document.getElementById('srcUrl').value.trim();
+
+  if(!prop1)               { alert('Selecciona la 1ª unidad.'); return; }
+  if(unidades>=2&&!prop2)  { alert('Selecciona la 2ª unidad.'); return; }
+  if(unidades>=3&&!prop3)  { alert('Selecciona la 3ª unidad.'); return; }
+  if(!url)                 { alert('Ingresa la URL del iCal.'); return; }
+  if(!url.startsWith('http')){ alert('La URL debe comenzar con http o https.'); return; }
+
+  const propIds=[prop1];
+  if(unidades>=2) propIds.push(prop2);
+  if(unidades>=3) propIds.push(prop3);
+
+  try {
+    const src=await api('POST','/api/ical-sources',{ propId:prop1, propIds, unidades, platform, url });
+    sources.push(src);
+    renderImportTab();
+    updateSSettingsInfo();
+    await updateSyncChip();
+  } catch(err){ alert('Error al agregar fuente: '+err.message); }
+}
+
+window.removeSource = async function(id){
+  if(!confirm('¿Eliminar esta fuente? También se eliminarán sus bloques importados.')) return;
+  try {
+    await api('DELETE',`/api/ical-sources/${id}`);
+    sources=sources.filter(s=>s.id!==id);
+    await refreshBookings();
+    renderImportTab();
+    renderCal();
+    updateSSettingsInfo();
+    await updateSyncChip();
+  } catch(err){ alert('Error: '+err.message); }
+};
+
+// ── TAB EXPORTAR ─────────────────────────
+function renderExportTab(){
+  const base=window.location.origin;
+  const rows=PROPS.map(p=>`
+    <tr>
+      <td style="font-weight:600;color:#1e293b">${p.name}</td>
+      <td style="color:#64748b">${p.group||'—'}</td>
+      <td style="color:#64748b">${p.dest}</td>
+      <td><span class="url-txt" title="${base}/api/ical/${p.id}.ics">${base}/api/ical/${p.id}.ics</span></td>
+      <td><button class="btn-copy" onclick="copyUrl('${base}/api/ical/${p.id}.ics',this)">📋 Copiar</button></td>
+    </tr>`).join('');
+  document.getElementById('settingsBody').innerHTML=`
+    <p style="font-size:.82rem;color:#64748b;margin-bottom:14px">Comparte estas URLs con las plataformas para que importen tu disponibilidad.</p>
+    <table class="out-tbl">
+      <thead><tr><th>Unidad</th><th>Complejo</th><th>Destino</th><th>URL de salida (.ics)</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+window.copyUrl = function(url, btn){
+  navigator.clipboard.writeText(url).then(()=>{
+    btn.textContent='✓ Copiado';
+    btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent='📋 Copiar'; btn.classList.remove('ok'); }, 2000);
+  });
+};
+
+// ═══════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════
+function updateLabel(){
+  document.getElementById('monthLbl').textContent=
+    `${MONTH_NAMES[curM].charAt(0).toUpperCase()+MONTH_NAMES[curM].slice(1)} ${curY}`;
+}
+function goMonth(delta){
+  curM+=delta;
+  if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;}
+  updateLabel(); renderCal();
+}
+function goHoy(){
+  const n=new Date(); curY=n.getFullYear(); curM=n.getMonth();
+  updateLabel(); renderCal();
+  setTimeout(()=>{
+    const t=document.querySelector('.day-th.today-col');
+    if(t) t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },120);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init(){
+  const n=new Date(); curY=n.getFullYear(); curM=n.getMonth();
+  updateLabel();
+
+  try { await refreshBookings(); }
+  catch(e){ console.error('Error cargando reservas:', e); bookings=[]; }
+  renderCal();
+  await updateSyncChip();
+
+  setTimeout(()=>{
+    const t=document.querySelector('.day-th.today-col');
+    if(t) t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },200);
+
+  // Actualizar chip cada 30 s
+  setInterval(updateSyncChip, 30000);
+
+  // Navegación
+  document.getElementById('btnPrev').addEventListener('click',()=>goMonth(-1));
+  document.getElementById('btnNext').addEventListener('click',()=>goMonth(1));
+  document.getElementById('btnHoy').addEventListener('click',goHoy);
+
+  // Settings
+  document.getElementById('btnSettings').addEventListener('click', openSettings);
+  document.getElementById('settingsClose').addEventListener('click', closeSettings);
+  document.getElementById('settingsCerrar').addEventListener('click', closeSettings);
+  document.getElementById('settingsOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSettings();});
+
+  document.getElementById('stabs').addEventListener('click',e=>{
+    const tab=e.target.dataset.tab;
+    if(tab){ settingsTab=tab; renderSettingsTab(); }
+  });
+
+  document.getElementById('btnSyncNow').addEventListener('click', async()=>{
+    const btn=document.getElementById('btnSyncNow');
+    btn.disabled=true; btn.textContent='🔄 Sincronizando…';
+    try {
+      await api('POST','/api/sync');
+      // Esperar ~3 s para que el server procese y luego actualizar
+      setTimeout(async()=>{
+        const st=await api('GET','/api/sync/status');
+        sources=st.sources||[];
+        await refreshBookings();
+        renderCal();
+        renderSettingsTab();
+        updateSSettingsInfo();
+        await updateSyncChip();
+        btn.disabled=false; btn.textContent='🔄 Sincronizar ahora';
+      }, 3000);
+    } catch(err){ alert('Error al sincronizar: '+err.message); btn.disabled=false; btn.textContent='🔄 Sincronizar ahora'; }
+  });
+
+  // Fecha entrada → ajustar mínimo de salida
+  document.getElementById('fStart').addEventListener('change',function(){
+    const end=document.getElementById('fEnd');
+    if(end.value&&end.value<this.value) end.value=this.value;
+    end.min=this.value;
+  });
+
+  // Modal ver
+  document.getElementById('viewClose').addEventListener('click',closeView);
+  document.getElementById('btnViewCerrar').addEventListener('click',closeView);
+  document.getElementById('viewOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeView();});
+  document.getElementById('btnDel').addEventListener('click',()=>{if(activeId)eliminar(activeId);});
+
+  // Modal form
+  document.getElementById('formClose').addEventListener('click',closeForm);
+  document.getElementById('btnFormCerrar').addEventListener('click',closeForm);
+  document.getElementById('formOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeForm();});
+  document.getElementById('btnGuardar').addEventListener('click',guardar);
+
+  document.querySelectorAll('.tbtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      formType=btn.dataset.t; syncTypeBtns(); syncFormSections();
+      if(formType==='reservation') setTimeout(()=>document.getElementById('fName').focus(),60);
+    });
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
