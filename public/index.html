@@ -199,6 +199,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ubtn:hover{border-color:#0ea5e9;color:#0284c7}
 .ubtn.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
 .si-units{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#1d4ed8;white-space:nowrap;flex-shrink:0}
+
+/* ── DRAG SELECT ── */
+.dc.drag-sel{background:#bae6fd!important;outline:1px solid #0ea5e9;z-index:1}
+.dc.drag-sel.res,.dc.drag-sel.blk,.dc.drag-sel.icalblk{opacity:.75}
+.cal-shell.dragging{user-select:none;cursor:col-resize}
+
+/* ── SYNC BTN HEADER ── */
+.btn-sync{background:rgba(14,165,233,.18);border:1px solid rgba(14,165,233,.35);color:#7dd3fc;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn-sync:hover{background:rgba(14,165,233,.35);border-color:rgba(14,165,233,.6);color:#fff}
+.btn-sync:disabled{opacity:.5;cursor:default}
+
+/* ── MULTI-BLOCK MODAL ── */
+.mb-prop-list{max-height:220px;overflow-y:auto;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px}
+.mb-dest-lbl{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;padding:6px 2px 2px;margin-top:2px}
+.mb-dest-lbl:first-child{padding-top:2px;margin-top:0}
+.mb-prop-row{display:flex;align-items:center;gap:7px;padding:3px 4px;border-radius:5px;cursor:pointer}
+.mb-prop-row:hover{background:#f1f5f9}
+.mb-prop-row input[type=checkbox]{accent-color:#0ea5e9;cursor:pointer;width:14px;height:14px;flex-shrink:0}
+.mb-prop-row label{font-size:.82rem;cursor:pointer;flex:1;color:#1e293b}
+.mb-grp-lbl{font-size:.7rem;color:#94a3b8}
+
+/* ── SOURCES AGRUPADAS POR PROPIEDAD ── */
+.src-prop-block{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.src-prop-hdr{background:#f0f9ff;padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #dbeafe}
+.src-phdr-name{font-size:.82rem;font-weight:700;color:#0369a1}
+.src-phdr-dest{font-size:.72rem;color:#64748b;margin-left:auto}
+.src-prop-rows{display:flex;flex-direction:column}
+.src-item{border-bottom:1px solid #f1f5f9;padding:9px 12px;display:flex;align-items:center;gap:8px}
+.src-item:last-child{border-bottom:none}
+.src-missing-row{display:flex;flex-wrap:wrap;gap:5px;padding:5px 12px 10px}
+.src-missing-pill{font-size:.69rem;color:#94a3b8;border:1px dashed #cbd5e1;border-radius:12px;padding:2px 10px}
 </style>
 </head>
 <body>
@@ -212,6 +243,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="leg-item"><div class="leg-dot a"></div>Disponible</div>
     </div>
     <div id="syncChip" class="sync-chip idle" title="Estado de sincronización iCal">⏸ Sin fuentes</div>
+    <button class="btn-sync" id="btnSyncHdr" title="Sincronizar fuentes iCal ahora">🔄 Sync</button>
     <button class="btn-settings" id="btnSettings">⚙ Sincronización</button>
     <div class="month-nav">
       <button class="nav-btn" id="btnPrev">&#8249;</button>
@@ -277,7 +309,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
               <label>Plataforma</label>
               <select id="fPlatform">
                 <option value="">Seleccionar…</option>
-                <option>Airbnb</option><option>Booking.com</option><option>VRBO</option>
+                <option>Airbnb</option><option>Booking.com</option><option>VRBO</option><option>Expedia</option>
                 <option>Directo</option><option>Facebook</option><option>WhatsApp</option><option>Otro</option>
               </select>
             </div>
@@ -316,6 +348,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <button class="btn btn-sec" id="btnDebugLog" title="Ver logs detallados del último sync">🪵 Ver logs</button>
         <button class="btn btn-sec" id="settingsCerrar">Cerrar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL BLOQUEO MÚLTIPLE ═══ -->
+<div class="overlay" id="multiBlockOv">
+  <div class="mbox" style="width:580px">
+    <div class="mhdr">
+      <div class="mtitle">📅 Bloqueo de fechas</div>
+      <button class="mclose" id="multiBlockClose">&#215;</button>
+    </div>
+    <div class="mbody" id="multiBlockBody"></div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="btnMultiBlockCerrar">Cancelar</button>
+      <button class="btn btn-pri" id="btnMultiBlockGuardar">Crear bloqueos</button>
     </div>
   </div>
 </div>
@@ -376,6 +423,9 @@ let activeId  = null;
 let formType  = 'reservation';
 let settingsTab = 'import';
 let _lastSyncRun = null;   // para detectar syncs automáticos y refrescar el calendario
+// Drag-to-select
+let drag = { on:false, startDs:null, curDs:null, pid:null, moved:false };
+let suppressClick = false;
 
 // ═══════════════════════════════════════════
 // UTILIDADES
@@ -489,6 +539,7 @@ function renderCal(){
   document.getElementById('calWrap').innerHTML=h;
   document.querySelectorAll('.dc').forEach(el=>{
     el.addEventListener('click',()=>{
+      if(suppressClick) return;
       const bkId=el.dataset.bk;
       if(bkId) openView(bkId);
       else     openForm(el.dataset.pid, el.dataset.ds);
@@ -660,30 +711,53 @@ function renderImportTab(){
     }</optgroup>`;
   }).join('');
 
-  const srcRows = sources.length
-    ? sources.map(src=>{
-        const ids = src.propIds && src.propIds.length ? src.propIds : [src.propId];
-        const pNames = ids.map(pid=>{
-          const p=PROPS.find(x=>x.id===pid);
-          return p ? p.name : pid;
-        }).join(' + ');
-        const destLabel = (()=>{ const p=PROPS.find(x=>x.id===ids[0]); return p?p.dest:''; })();
-        const uds = src.unidades || ids.length;
-        let status='';
-        if(src.lastStatus==='ok')
-          status=`<span class="si-ok" title="${src.importedCount||0} eventos">✓ ${fmtTime(src.lastSync)} (${src.importedCount||0})</span>`;
-        else if(src.lastStatus==='error')
-          status=`<span class="si-err" title="${src.lastError}">✗ Error</span>`;
-        else
-          status=`<span class="si-pend">Pendiente</span>`;
-        return `<div class="src-item">
-          <span class="si-prop" title="${pNames} — ${destLabel}">${pNames}</span>
-          ${uds>1?`<span class="si-units">${uds} uds.</span>`:''}
-          <span class="si-plat">${src.platform||'—'}</span>
-          <span class="si-url" title="${src.url}">${src.url}</span>
-          ${status}
-          <button class="btn btn-sec" style="padding:4px 8px;font-size:.75rem;flex-shrink:0" title="Diagnóstico de esta fuente" onclick="debugSource('${src.id}')">🔍</button>
-          <button class="btn btn-del" style="padding:4px 10px;font-size:.75rem;flex-shrink:0" onclick="removeSource('${src.id}')">🗑</button>
+  // Agrupar fuentes por propiedad (1ª propId como clave)
+  const MAJOR_PLATS = ['Airbnb','Booking.com','VRBO','Expedia'];
+  const grouped = {};
+  sources.forEach(src=>{
+    const ids = src.propIds && src.propIds.length ? src.propIds : [src.propId];
+    const key = ids[0];
+    if(!grouped[key]) grouped[key]=[];
+    grouped[key].push(src);
+  });
+  const srcRows = Object.keys(grouped).length
+    ? Object.entries(grouped).map(([key,srcs])=>{
+        const prop = PROPS.find(p=>p.id===key);
+        const propName = prop ? prop.name : key;
+        const propDest = prop ? `${prop.dest}${prop.group?' · '+prop.group:''}` : '';
+        const srcRowsHtml = srcs.map(src=>{
+          const ids = src.propIds && src.propIds.length ? src.propIds : [src.propId];
+          const uds = src.unidades || ids.length;
+          const extraProps = ids.slice(1).map(pid=>{ const p=PROPS.find(x=>x.id===pid); return p?p.name:pid; }).join(', ');
+          let status='';
+          if(src.lastStatus==='ok')
+            status=`<span class="si-ok" title="${src.importedCount||0} eventos">✓ ${fmtTime(src.lastSync)} (${src.importedCount||0})</span>`;
+          else if(src.lastStatus==='error')
+            status=`<span class="si-err" title="${src.lastError}">✗ Error</span>`;
+          else
+            status=`<span class="si-pend">Pendiente</span>`;
+          return `<div class="src-item">
+            ${uds>1?`<span class="si-units">${uds} uds.${extraProps?' + '+extraProps:''}</span>`:''}
+            <span class="si-plat">${src.platform||'—'}</span>
+            <span class="si-url" title="${src.url}">${src.url}</span>
+            ${status}
+            <button class="btn btn-sec" style="padding:4px 8px;font-size:.75rem;flex-shrink:0" title="Diagnóstico" onclick="debugSource('${src.id}')">🔍</button>
+            <button class="btn btn-del" style="padding:4px 10px;font-size:.75rem;flex-shrink:0" onclick="removeSource('${src.id}')">🗑</button>
+          </div>`;
+        }).join('');
+        // Plataformas principales que faltan en esta propiedad
+        const configured = srcs.map(s=>s.platform);
+        const missing = MAJOR_PLATS.filter(p=>!configured.includes(p));
+        const missingHtml = missing.length
+          ? `<div class="src-missing-row">${missing.map(p=>`<span class="src-missing-pill">+ ${p}</span>`).join('')}</div>`
+          : '';
+        return `<div class="src-prop-block">
+          <div class="src-prop-hdr">
+            <span class="src-phdr-name">${propName}</span>
+            <span class="src-phdr-dest">${propDest}</span>
+          </div>
+          <div class="src-prop-rows">${srcRowsHtml}</div>
+          ${missingHtml}
         </div>`;
       }).join('')
     : '<div class="src-empty">No hay fuentes configuradas.<br>Agrega una URL de iCal para empezar a sincronizar.</div>';
@@ -695,7 +769,7 @@ function renderImportTab(){
         <div class="fg"><label>Plataforma</label>
           <select id="srcPlatform">
             <option value="">Seleccionar…</option>
-            <option>Airbnb</option><option>Booking.com</option><option>VRBO</option><option>Otro</option>
+            <option>Airbnb</option><option>Booking.com</option><option>VRBO</option><option>Expedia</option><option>Otro</option>
           </select></div>
         <div class="fg"><label>Unidades que ocupa</label>
           <div class="unit-sel" id="unitSel">
@@ -835,6 +909,132 @@ window.copyUrl = function(url, btn){
 };
 
 // ═══════════════════════════════════════════
+// DRAG HELPERS
+// ═══════════════════════════════════════════
+function updateDragHighlight(){
+  const s   = drag.startDs <= drag.curDs ? drag.startDs : drag.curDs;
+  const end = drag.startDs <= drag.curDs ? drag.curDs   : drag.startDs;
+  document.querySelectorAll(`.dc[data-pid="${drag.pid}"]`).forEach(dc=>{
+    const inRange = !dc.dataset.bk && dc.dataset.ds >= s && dc.dataset.ds <= end;
+    dc.classList.toggle('drag-sel', inRange);
+  });
+}
+function clearDragHighlight(){
+  document.querySelectorAll('.dc.drag-sel').forEach(dc=>dc.classList.remove('drag-sel'));
+}
+
+// ═══════════════════════════════════════════
+// BLOQUEO MÚLTIPLE
+// ═══════════════════════════════════════════
+const PLAT_OPTS = ['Airbnb','Booking.com','VRBO','Expedia','Directo','Facebook','WhatsApp','Otro'];
+
+function openMultiBlock(pid, s, e){
+  const propCheckboxes = DESTINATIONS.map(dest=>{
+    const ps = PROPS.filter(p=>p.dest===dest);
+    return `<div class="mb-dest-lbl">${dest}</div>`+ps.map(p=>`
+      <div class="mb-prop-row">
+        <input type="checkbox" id="mbp_${p.id}" name="mbProp" value="${p.id}" ${p.id===pid?'checked':''}>
+        <label for="mbp_${p.id}">${p.name}${p.group?`<span class="mb-grp-lbl"> · ${p.group}</span>`:''}</label>
+      </div>`).join('');
+  }).join('');
+
+  document.getElementById('multiBlockBody').innerHTML=`
+    <div class="fg">
+      <label>Tipo</label>
+      <div class="type-sel">
+        <button type="button" class="tbtn b on" data-mt="block">🔴 Bloqueo</button>
+        <button type="button" class="tbtn r" data-mt="reservation">🟢 Reserva</button>
+      </div>
+      <input type="hidden" id="mbType" value="block">
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Entrada <span class="req">*</span></label><input type="date" id="mbStart" value="${s}"></div>
+      <div class="fg"><label>Salida <span class="req">*</span></label><input type="date" id="mbEnd" value="${e}"></div>
+    </div>
+    <div id="mbGuestSec" style="display:none">
+      <div class="frow">
+        <div class="fg"><label>Nombre huésped <span class="req">*</span></label><input type="text" id="mbName" placeholder="Nombre completo"></div>
+        <div class="fg"><label>Teléfono</label><input type="tel" id="mbPhone" placeholder="+52 33 0000 0000"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Ingreso bruto ($)</label><input type="number" id="mbIncome" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="fg"><label>Plataforma</label>
+          <select id="mbPlatform"><option value="">Seleccionar…</option>${PLAT_OPTS.map(p=>`<option>${p}</option>`).join('')}</select>
+        </div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Propiedades <span class="req">*</span></label>
+      <div class="mb-prop-list">${propCheckboxes}</div>
+    </div>
+    <div class="fg"><label>Notas</label><textarea id="mbNotes" placeholder="Notas adicionales…"></textarea></div>`;
+
+  // Toggle tipo
+  document.querySelectorAll('[data-mt]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-mt]').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      const t=btn.dataset.mt;
+      document.getElementById('mbType').value=t;
+      document.getElementById('mbGuestSec').style.display=t==='reservation'?'':'none';
+      document.getElementById('btnMultiBlockGuardar').textContent=t==='reservation'?'Crear reservas':'Crear bloqueos';
+    });
+  });
+
+  document.getElementById('multiBlockOv').classList.add('on');
+}
+
+function closeMultiBlock(){
+  document.getElementById('multiBlockOv').classList.remove('on');
+}
+
+async function guardarMultiBlock(){
+  const s     = document.getElementById('mbStart').value;
+  const e     = document.getElementById('mbEnd').value;
+  const type  = document.getElementById('mbType').value;
+  const notes = document.getElementById('mbNotes').value.trim();
+
+  if(!s||!e)   { alert('Ingresa las fechas de entrada y salida.'); return; }
+  if(s>e)      { alert('La salida debe ser después de la entrada.'); return; }
+
+  const name = type==='reservation' ? document.getElementById('mbName').value.trim() : '';
+  if(type==='reservation'&&!name){ alert('Ingresa el nombre del huésped.'); return; }
+
+  const checked = [...document.querySelectorAll('input[name="mbProp"]:checked')].map(cb=>cb.value);
+  if(!checked.length){ alert('Selecciona al menos una propiedad.'); return; }
+
+  const conflicts = checked.filter(pid=>hasOverlap(pid,s,e,null));
+  if(conflicts.length){
+    const names = conflicts.map(pid=>PROPS.find(p=>p.id===pid)?.name||pid).join(', ');
+    if(!confirm(`Ya hay bloqueos/reservas en esas fechas para:\n${names}\n\n¿Continuar solo con las propiedades disponibles?`)) return;
+  }
+  const toCreate = checked.filter(pid=>!hasOverlap(pid,s,e,null));
+  if(!toCreate.length){ alert('Todas las propiedades seleccionadas tienen conflictos en esas fechas.'); return; }
+
+  const btn = document.getElementById('btnMultiBlockGuardar');
+  const origTxt = btn.textContent;
+  btn.disabled=true; btn.textContent='Guardando…';
+
+  try {
+    for(const pid of toCreate){
+      await api('POST','/api/bookings',{
+        pid, type,
+        name:  type==='reservation'?name:'',
+        phone: type==='reservation'?(document.getElementById('mbPhone').value.trim()):'',
+        s, e,
+        income: type==='reservation'?(parseFloat(document.getElementById('mbIncome').value)||0):0,
+        platform: type==='reservation'?document.getElementById('mbPlatform').value:'',
+        notes,
+      });
+    }
+    await refreshBookings();
+    closeMultiBlock();
+    renderCal();
+  } catch(err){ alert('Error al guardar: '+err.message); }
+  finally { btn.disabled=false; btn.textContent=origTxt; }
+}
+
+// ═══════════════════════════════════════════
 // NAVEGACIÓN
 // ═══════════════════════════════════════════
 function updateLabel(){
@@ -912,6 +1112,60 @@ async function init(){
     window.open('/api/sync/debug', '_blank');
   });
 
+  // ── Botón Sync en el header ───────────────
+  document.getElementById('btnSyncHdr').addEventListener('click', async()=>{
+    const btn=document.getElementById('btnSyncHdr');
+    btn.disabled=true; btn.textContent='🔄…';
+    try {
+      const resp=await api('POST','/api/sync');
+      if(resp?.lastRun) _lastSyncRun=resp.lastRun;
+      if(resp?.sources) sources=resp.sources;
+      await refreshBookings(); renderCal(); await updateSyncChip();
+    } catch(err){ alert('Error al sincronizar: '+err.message); }
+    btn.disabled=false; btn.textContent='🔄 Sync';
+  });
+
+  // ── Modal bloqueo múltiple ─────────────────
+  document.getElementById('multiBlockClose').addEventListener('click', closeMultiBlock);
+  document.getElementById('btnMultiBlockCerrar').addEventListener('click', closeMultiBlock);
+  document.getElementById('multiBlockOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMultiBlock();});
+  document.getElementById('btnMultiBlockGuardar').addEventListener('click', guardarMultiBlock);
+
+  // ── Drag to select range ───────────────────
+  const calShellEl = document.getElementById('calShell');
+  calShellEl.addEventListener('mousedown',e=>{
+    const dc=e.target.closest('.dc');
+    if(!dc||!dc.dataset.ds||!dc.dataset.pid||dc.dataset.bk) return;
+    e.preventDefault();
+    drag={on:true,startDs:dc.dataset.ds,curDs:dc.dataset.ds,pid:dc.dataset.pid,moved:false};
+    calShellEl.classList.add('dragging');
+    updateDragHighlight();
+  });
+  calShellEl.addEventListener('mousemove',e=>{
+    if(!drag.on) return;
+    const dc=e.target.closest('.dc');
+    if(!dc||!dc.dataset.ds||dc.dataset.pid!==drag.pid) return;
+    if(dc.dataset.ds!==drag.curDs){
+      drag.moved=true; drag.curDs=dc.dataset.ds;
+      updateDragHighlight();
+    }
+  });
+  document.addEventListener('mouseup',()=>{
+    if(!drag.on) return;
+    drag.on=false;
+    calShellEl.classList.remove('dragging');
+    if(drag.moved && drag.startDs!==drag.curDs){
+      suppressClick=true;
+      setTimeout(()=>{ suppressClick=false; },100);
+      const s   = drag.startDs<=drag.curDs ? drag.startDs : drag.curDs;
+      const end = drag.startDs<=drag.curDs ? drag.curDs   : drag.startDs;
+      clearDragHighlight();
+      openMultiBlock(drag.pid, s, end);
+    } else {
+      clearDragHighlight();
+    }
+  });
+
   // Fecha entrada → ajustar mínimo de salida
   document.getElementById('fStart').addEventListener('change',function(){
     const end=document.getElementById('fEnd');
@@ -939,7 +1193,7 @@ async function init(){
   });
 
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); }
+    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); }
   });
 }
 
