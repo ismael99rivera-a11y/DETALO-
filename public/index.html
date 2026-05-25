@@ -424,7 +424,7 @@ let formType  = 'reservation';
 let settingsTab = 'import';
 let _lastSyncRun = null;   // para detectar syncs automáticos y refrescar el calendario
 // Drag-to-select
-let drag = { on:false, startDs:null, curDs:null, pid:null, moved:false };
+let drag = { on:false, startDs:null, curDs:null, startPid:null, curPid:null, moved:false };
 let suppressClick = false;
 
 // ═══════════════════════════════════════════
@@ -914,9 +914,14 @@ window.copyUrl = function(url, btn){
 function updateDragHighlight(){
   const s   = drag.startDs <= drag.curDs ? drag.startDs : drag.curDs;
   const end = drag.startDs <= drag.curDs ? drag.curDs   : drag.startDs;
-  document.querySelectorAll(`.dc[data-pid="${drag.pid}"]`).forEach(dc=>{
-    const inRange = !dc.dataset.bk && dc.dataset.ds >= s && dc.dataset.ds <= end;
-    dc.classList.toggle('drag-sel', inRange);
+  // Rango vertical: índice de propiedad en el array PROPS (orden del calendario)
+  const si  = PROPS.findIndex(p=>p.id===drag.startPid);
+  const ci  = PROPS.findIndex(p=>p.id===drag.curPid);
+  const lo  = Math.min(si,ci), hi = Math.max(si,ci);
+  document.querySelectorAll('.dc').forEach(dc=>{
+    const pi = PROPS.findIndex(p=>p.id===dc.dataset.pid);
+    const ok = !dc.dataset.bk && dc.dataset.ds>=s && dc.dataset.ds<=end && pi>=lo && pi<=hi;
+    dc.classList.toggle('drag-sel', ok);
   });
 }
 function clearDragHighlight(){
@@ -928,12 +933,14 @@ function clearDragHighlight(){
 // ═══════════════════════════════════════════
 const PLAT_OPTS = ['Airbnb','Booking.com','VRBO','Expedia','Directo','Facebook','WhatsApp','Otro'];
 
-function openMultiBlock(pid, s, e){
+function openMultiBlock(pids, s, e){
+  // pids puede ser string (un solo pid) o array
+  const pidSet = new Set(Array.isArray(pids) ? pids : [pids]);
   const propCheckboxes = DESTINATIONS.map(dest=>{
     const ps = PROPS.filter(p=>p.dest===dest);
     return `<div class="mb-dest-lbl">${dest}</div>`+ps.map(p=>`
       <div class="mb-prop-row">
-        <input type="checkbox" id="mbp_${p.id}" name="mbProp" value="${p.id}" ${p.id===pid?'checked':''}>
+        <input type="checkbox" id="mbp_${p.id}" name="mbProp" value="${p.id}" ${pidSet.has(p.id)?'checked':''}>
         <label for="mbp_${p.id}">${p.name}${p.group?`<span class="mb-grp-lbl"> · ${p.group}</span>`:''}</label>
       </div>`).join('');
   }).join('');
@@ -1137,16 +1144,16 @@ async function init(){
     const dc=e.target.closest('.dc');
     if(!dc||!dc.dataset.ds||!dc.dataset.pid||dc.dataset.bk) return;
     e.preventDefault();
-    drag={on:true,startDs:dc.dataset.ds,curDs:dc.dataset.ds,pid:dc.dataset.pid,moved:false};
+    drag={on:true,startDs:dc.dataset.ds,curDs:dc.dataset.ds,startPid:dc.dataset.pid,curPid:dc.dataset.pid,moved:false};
     calShellEl.classList.add('dragging');
     updateDragHighlight();
   });
   calShellEl.addEventListener('mousemove',e=>{
     if(!drag.on) return;
     const dc=e.target.closest('.dc');
-    if(!dc||!dc.dataset.ds||dc.dataset.pid!==drag.pid) return;
-    if(dc.dataset.ds!==drag.curDs){
-      drag.moved=true; drag.curDs=dc.dataset.ds;
+    if(!dc||!dc.dataset.ds||!dc.dataset.pid) return;
+    if(dc.dataset.ds!==drag.curDs||dc.dataset.pid!==drag.curPid){
+      drag.moved=true; drag.curDs=dc.dataset.ds; drag.curPid=dc.dataset.pid;
       updateDragHighlight();
     }
   });
@@ -1154,13 +1161,17 @@ async function init(){
     if(!drag.on) return;
     drag.on=false;
     calShellEl.classList.remove('dragging');
-    if(drag.moved && drag.startDs!==drag.curDs){
+    if(drag.moved && (drag.startDs!==drag.curDs||drag.startPid!==drag.curPid)){
       suppressClick=true;
       setTimeout(()=>{ suppressClick=false; },100);
       const s   = drag.startDs<=drag.curDs ? drag.startDs : drag.curDs;
       const end = drag.startDs<=drag.curDs ? drag.curDs   : drag.startDs;
+      const si  = PROPS.findIndex(p=>p.id===drag.startPid);
+      const ci  = PROPS.findIndex(p=>p.id===drag.curPid);
+      const lo  = Math.min(si,ci), hi = Math.max(si,ci);
+      const pids = PROPS.slice(lo, hi+1).map(p=>p.id);
       clearDragHighlight();
-      openMultiBlock(drag.pid, s, end);
+      openMultiBlock(pids, s, end);
     } else {
       clearDragHighlight();
     }
