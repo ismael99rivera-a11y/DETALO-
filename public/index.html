@@ -204,6 +204,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ubtn:hover{border-color:#0ea5e9;color:#0284c7}
 .ubtn.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
 .si-units{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:4px;background:#eff6ff;color:#1d4ed8;white-space:nowrap;flex-shrink:0}
+/* Multi-URL display in source list */
+.si-url-stack{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+/* Small hint inside form labels */
+.unit-url-note{font-size:.68rem;font-weight:400;color:#94a3b8;margin-left:4px}
 
 /* ── DRAG SELECT ── */
 .dc.drag-sel{background:#bae6fd!important;outline:1px solid #0ea5e9;z-index:1}
@@ -678,7 +682,7 @@ async function updateSyncChip(){
     } else if(!sources.length){
       chip.className='sync-chip idle';chip.textContent='⏸ Sin fuentes';
     } else {
-      const anyErr=sources.some(s=>s.lastStatus==='error');
+      const anyErr=sources.some(s=>s.lastStatus==='error'||s.lastStatus==='partial');
       const allOk=sources.every(s=>s.lastStatus==='ok');
       if(anyErr){ chip.className='sync-chip err'; chip.textContent='⚠ Error en sync'; }
       else if(allOk&&st.lastRun){
@@ -743,14 +747,19 @@ function renderImportTab(){
           let status='';
           if(src.lastStatus==='ok')
             status=`<span class="si-ok" title="${src.importedCount||0} eventos">✓ ${fmtTime(src.lastSync)} (${src.importedCount||0})</span>`;
+          else if(src.lastStatus==='partial')
+            status=`<span class="si-err" title="${src.lastError||'Algunas URLs fallaron'}">⚠ Parcial</span>`;
           else if(src.lastStatus==='error')
             status=`<span class="si-err" title="${src.lastError}">✗ Error</span>`;
           else
             status=`<span class="si-pend">Pendiente</span>`;
+          // URLs: mostrar todas si hay varias, si no la única
+          const srcUrls = src.urls && src.urls.length > 1 ? src.urls : [src.url];
+          const urlsHtml = `<div class="si-url-stack">${srcUrls.map(u=>`<span class="si-url" title="${u}">${u}</span>`).join('')}</div>`;
           return `<div class="src-item">
             ${uds>1?`<span class="si-units">${uds} uds.${extraProps?' + '+extraProps:''}</span>`:''}
             <span class="si-plat">${src.platform||'—'}</span>
-            <span class="si-url" title="${src.url}">${src.url}</span>
+            ${urlsHtml}
             ${status}
             <button class="btn btn-sec" style="padding:4px 8px;font-size:.75rem;flex-shrink:0" title="Diagnóstico" onclick="debugSource('${src.id}')">🔍</button>
             <button class="btn btn-del" style="padding:4px 10px;font-size:.75rem;flex-shrink:0" onclick="removeSource('${src.id}')">🗑</button>
@@ -791,14 +800,24 @@ function renderImportTab(){
           <input type="hidden" id="srcUnidades" value="1">
         </div>
       </div>
-      <div class="fg"><label>1ª unidad</label>
-        <select id="srcProp1"><option value="">Seleccionar…</option>${propOpts}</select></div>
-      <div class="fg" id="prop2Fg" style="display:none"><label>2ª unidad</label>
-        <select id="srcProp2"><option value="">Seleccionar…</option>${propOpts}</select></div>
-      <div class="fg" id="prop3Fg" style="display:none"><label>3ª unidad</label>
-        <select id="srcProp3"><option value="">Seleccionar…</option>${propOpts}</select></div>
-      <div class="fg"><label>URL del calendario iCal</label>
-        <input type="url" id="srcUrl" placeholder="https://www.airbnb.com/calendar/ical/…"></div>
+      <div class="frow" id="unitRow1">
+        <div class="fg"><label>1ª unidad</label>
+          <select id="srcProp1"><option value="">Seleccionar…</option>${propOpts}</select></div>
+        <div class="fg"><label>URL iCal</label>
+          <input type="url" id="srcUrl1" placeholder="https://www.airbnb.com/calendar/ical/…"></div>
+      </div>
+      <div class="frow" id="unitRow2" style="display:none">
+        <div class="fg"><label>2ª unidad</label>
+          <select id="srcProp2"><option value="">Seleccionar…</option>${propOpts}</select></div>
+        <div class="fg"><label>URL iCal<span class="unit-url-note"> (2ª unidad)</span></label>
+          <input type="url" id="srcUrl2" placeholder="https://www.airbnb.com/calendar/ical/…"></div>
+      </div>
+      <div class="frow" id="unitRow3" style="display:none">
+        <div class="fg"><label>3ª unidad</label>
+          <select id="srcProp3"><option value="">Seleccionar…</option>${propOpts}</select></div>
+        <div class="fg"><label>URL iCal<span class="unit-url-note"> (3ª unidad)</span></label>
+          <input type="url" id="srcUrl3" placeholder="https://www.airbnb.com/calendar/ical/…"></div>
+      </div>
       <button class="btn btn-pri" id="btnAddSrc" style="width:100%">+ Agregar fuente</button>
     </div>
     <div class="src-list" id="srcListEl">${srcRows}</div>`;
@@ -810,8 +829,8 @@ function renderImportTab(){
       btn.classList.add('on');
       const u=parseInt(btn.dataset.u);
       document.getElementById('srcUnidades').value=u;
-      document.getElementById('prop2Fg').style.display=u>=2?'':'none';
-      document.getElementById('prop3Fg').style.display=u>=3?'':'none';
+      document.getElementById('unitRow2').style.display=u>=2?'':'none';
+      document.getElementById('unitRow3').style.display=u>=3?'':'none';
     });
   });
 
@@ -819,25 +838,34 @@ function renderImportTab(){
 }
 
 async function addSource(){
-  const unidades= parseInt(document.getElementById('srcUnidades').value)||1;
-  const prop1   = document.getElementById('srcProp1').value;
-  const prop2   = document.getElementById('srcProp2')?.value||'';
-  const prop3   = document.getElementById('srcProp3')?.value||'';
-  const platform= document.getElementById('srcPlatform').value;
-  const url     = document.getElementById('srcUrl').value.trim();
+  const unidades = parseInt(document.getElementById('srcUnidades').value)||1;
+  const platform = document.getElementById('srcPlatform').value;
 
-  if(!prop1)               { alert('Selecciona la 1ª unidad.'); return; }
-  if(unidades>=2&&!prop2)  { alert('Selecciona la 2ª unidad.'); return; }
-  if(unidades>=3&&!prop3)  { alert('Selecciona la 3ª unidad.'); return; }
-  if(!url)                 { alert('Ingresa la URL del iCal.'); return; }
-  if(!url.startsWith('http')){ alert('La URL debe comenzar con http o https.'); return; }
+  const prop1 = document.getElementById('srcProp1').value;
+  const url1  = document.getElementById('srcUrl1').value.trim();
+  const prop2 = unidades>=2 ? (document.getElementById('srcProp2')?.value||'') : '';
+  const url2  = unidades>=2 ? (document.getElementById('srcUrl2')?.value.trim()||'') : '';
+  const prop3 = unidades>=3 ? (document.getElementById('srcProp3')?.value||'') : '';
+  const url3  = unidades>=3 ? (document.getElementById('srcUrl3')?.value.trim()||'') : '';
 
-  const propIds=[prop1];
-  if(unidades>=2) propIds.push(prop2);
-  if(unidades>=3) propIds.push(prop3);
+  if(!prop1)                          { alert('Selecciona la 1ª unidad.'); return; }
+  if(!url1||!url1.startsWith('http')) { alert('Ingresa una URL válida para la 1ª unidad.'); return; }
+  if(unidades>=2&&!prop2)             { alert('Selecciona la 2ª unidad.'); return; }
+  if(unidades>=2&&(!url2||!url2.startsWith('http'))) { alert('Ingresa una URL válida para la 2ª unidad.'); return; }
+  if(unidades>=3&&!prop3)             { alert('Selecciona la 3ª unidad.'); return; }
+  if(unidades>=3&&(!url3||!url3.startsWith('http'))) { alert('Ingresa una URL válida para la 3ª unidad.'); return; }
+
+  const propIds = [prop1];
+  const urls    = [url1];
+  if(unidades>=2){ propIds.push(prop2); urls.push(url2); }
+  if(unidades>=3){ propIds.push(prop3); urls.push(url3); }
 
   try {
-    const src=await api('POST','/api/ical-sources',{ propId:prop1, propIds, unidades, platform, url });
+    const src=await api('POST','/api/ical-sources',{
+      propId: prop1, propIds, unidades, platform,
+      url: urls[0],   // campo legacy — siempre igual a la 1ª URL
+      urls,
+    });
     sources.push(src);
     renderImportTab();
     updateSSettingsInfo();
@@ -853,7 +881,8 @@ window.debugSource = async function(id){
     // Construir reporte legible
     const lines = [];
     lines.push(`=== DIAGNÓSTICO iCal: ${r.source.platform||'(sin plataforma)'} ===`);
-    lines.push(`URL: ${r.source.url}`);
+    const diagUrls = r.source.urls && r.source.urls.length>1 ? r.source.urls : [r.source.url];
+    diagUrls.forEach((u,i)=>lines.push(`URL${diagUrls.length>1?' '+(i+1):''}: ${u}`));
     lines.push(`Propiedad(es): ${r.source.propIds.join(', ')}`);
     lines.push('');
     lines.push('--- Pasos ---');

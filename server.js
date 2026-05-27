@@ -245,83 +245,117 @@ function slog(...args) {
 }
 
 async function syncSourceDebug(src, dryRun = false) {
-  const report = { src: { id: src.id, platform: src.platform, url: src.url, propIds: src.propIds || [src.propId] }, steps: [], blocks: [], error: null };
-  let text;
-  try {
-    text = await fetchText(src.url);
-    report.steps.push({ ok: true, msg: `Descargado ${text.length} bytes` });
-    slog(`  URL: ${src.url}`);
-    slog(`  Bytes descargados: ${text.length}`);
-    // Mostrar primeras líneas del iCal para diagnóstico
-    const preview = text.split('\n').slice(0, 8).join('\n');
-    slog(`  Primeras líneas:\n${preview}`);
-  } catch (err) {
-    const errMsg = err.message || err.code || String(err);
-    report.error = errMsg;
-    report.steps.push({ ok: false, msg: `Error al descargar: ${errMsg}` });
-    slog(`  ERROR al descargar: ${errMsg}`);
-    return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: errMsg }, blocks: [], report };
-  }
+  const allPropIds = src.propIds && src.propIds.length ? src.propIds : [src.propId];
 
-  const events = parseIcalText(text);
-  slog(`  Eventos VEVENT encontrados: ${events.length}`);
-  report.steps.push({ ok: true, msg: `${events.length} eventos VEVENT encontrados` });
+  // Soporte multi-URL: si hay un array urls[] con varias entradas se usa mapeado
+  // 1:1 (urls[i] → propIds[i]).  Si hay una sola URL (caso clásico) se asigna
+  // a todos los propIds, como antes.
+  const urlList   = (src.urls && src.urls.length > 1) ? src.urls : [src.url];
+  const use1to1   = urlList.length > 1 && urlList.length === allPropIds.length;
+
+  const report = {
+    src: { id: src.id, platform: src.platform, url: src.url, urls: urlList, propIds: allPropIds },
+    steps: [], blocks: [], error: null,
+  };
 
   const blocks = [];
-  for (const ev of events) {
-    let s = icalDateToYmd(ev['DTSTART']);
-    let e = icalDateToYmd(ev['DTEND']);
-    const uid     = ev['UID']     || '';
-    const status  = (ev['STATUS'] || '').toUpperCase();
-    const summary = ev['SUMMARY'] || '';
+  let anySuccess = false;
+  let lastError  = null;
 
-    // Log cada evento
-    slog(`    VEVENT uid=${uid} summary="${summary}" dtstart=${ev['DTSTART']} dtend=${ev['DTEND']} status=${status}`);
+  for (let ui = 0; ui < urlList.length; ui++) {
+    const urlEntry  = urlList[ui];
+    const pidsForUrl = use1to1 ? [allPropIds[ui]] : allPropIds;
+    const urlLabel  = urlList.length > 1 ? `URL ${ui + 1}` : 'URL';
 
-    if (!s) {
-      slog(`      → SALTADO: DTSTART no tiene fecha válida`);
-      report.steps.push({ ok: false, msg: `Saltado (sin DTSTART): uid=${uid}` });
-      continue;
-    }
-    if (!e) e = s;
-    const eOrig = e;
-    e = addDays(e, -1);   // DTEND es exclusivo → restar 1 día
-    if (e < s) e = s;
-
-    if (uid.endsWith('@detalo')) {
-      slog(`      → SALTADO: UID termina en @detalo (evento propio)`);
-      report.steps.push({ ok: false, msg: `Saltado (UID @detalo): uid=${uid}` });
-      continue;
-    }
-    if (status === 'CANCELLED') {
-      slog(`      → SALTADO: STATUS=CANCELLED`);
-      report.steps.push({ ok: false, msg: `Saltado (CANCELLED): uid=${uid}` });
-      continue;
+    let text;
+    try {
+      text = await fetchText(urlEntry);
+      anySuccess = true;
+      report.steps.push({ ok: true, msg: `${urlLabel}: Descargado ${text.length} bytes` });
+      slog(`  ${urlLabel}: ${urlEntry}`);
+      slog(`  Bytes: ${text.length}`);
+      const preview = text.split('\n').slice(0, 8).join('\n');
+      slog(`  Primeras líneas:\n${preview}`);
+    } catch (err) {
+      const errMsg = err.message || err.code || String(err);
+      lastError = errMsg;
+      report.steps.push({ ok: false, msg: `${urlLabel}: Error al descargar: ${errMsg}` });
+      slog(`  ${urlLabel}: ERROR: ${errMsg}`);
+      if (urlList.length === 1) {
+        // URL única → fallo total, retornar de inmediato
+        return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: errMsg }, blocks: [], report };
+      }
+      continue; // con múltiples URLs seguir con las demás
     }
 
-    const propIds = src.propIds && src.propIds.length ? src.propIds : [src.propId];
-    slog(`      → ACEPTADO s=${s} e=${e} (DTEND ${eOrig} -1 día) pids=${propIds.join(',')}`);
-    report.steps.push({ ok: true, msg: `Aceptado: "${summary}" ${s} → ${e} pids=${propIds.join(',')}` });
+    const events = parseIcalText(text);
+    slog(`  ${urlLabel}: ${events.length} eventos VEVENT`);
+    report.steps.push({ ok: true, msg: `${urlLabel}: ${events.length} eventos VEVENT encontrados` });
 
-    for (const pid of propIds) {
-      const blk = {
-        id: genId(), pid,
-        type: 'ical-block',
-        name: summary || 'Bloqueado',
-        phone: '', s, e, income: 0,
-        platform: src.platform || '',
-        notes: `Importado de ${src.platform || 'iCal'}`,
-        source: 'ical', sourceId: src.id, icalUid: uid,
-        syncedAt: new Date().toISOString(),
-      };
-      blocks.push(blk);
-      report.blocks.push({ pid, s, e, summary });
+    for (const ev of events) {
+      let s = icalDateToYmd(ev['DTSTART']);
+      let e = icalDateToYmd(ev['DTEND']);
+      const uid     = ev['UID']     || '';
+      const status  = (ev['STATUS'] || '').toUpperCase();
+      const summary = ev['SUMMARY'] || '';
+
+      slog(`    VEVENT uid=${uid} summary="${summary}" dtstart=${ev['DTSTART']} dtend=${ev['DTEND']} status=${status}`);
+
+      if (!s) {
+        slog(`      → SALTADO: DTSTART no tiene fecha válida`);
+        report.steps.push({ ok: false, msg: `Saltado (sin DTSTART): uid=${uid}` });
+        continue;
+      }
+      if (!e) e = s;
+      const eOrig = e;
+      e = addDays(e, -1);   // DTEND es exclusivo → restar 1 día
+      if (e < s) e = s;
+
+      if (uid.endsWith('@detalo')) {
+        slog(`      → SALTADO: UID termina en @detalo (evento propio)`);
+        report.steps.push({ ok: false, msg: `Saltado (UID @detalo): uid=${uid}` });
+        continue;
+      }
+      if (status === 'CANCELLED') {
+        slog(`      → SALTADO: STATUS=CANCELLED`);
+        report.steps.push({ ok: false, msg: `Saltado (CANCELLED): uid=${uid}` });
+        continue;
+      }
+
+      slog(`      → ACEPTADO s=${s} e=${e} (DTEND ${eOrig} -1 día) pids=${pidsForUrl.join(',')}`);
+      report.steps.push({ ok: true, msg: `Aceptado: "${summary}" ${s} → ${e} pids=${pidsForUrl.join(',')}` });
+
+      for (const pid of pidsForUrl) {
+        const blk = {
+          id: genId(), pid,
+          type: 'ical-block',
+          name: summary || 'Bloqueado',
+          phone: '', s, e, income: 0,
+          platform: src.platform || '',
+          notes: `Importado de ${src.platform || 'iCal'}`,
+          source: 'ical', sourceId: src.id, icalUid: uid,
+          syncedAt: new Date().toISOString(),
+        };
+        blocks.push(blk);
+        report.blocks.push({ pid, s, e, summary });
+      }
     }
+  }
+
+  // Si todas las URLs fallaron (multi-URL)
+  if (!anySuccess) {
+    return { updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'error', lastError: lastError }, blocks: [], report };
   }
 
   slog(`  Bloques creados: ${blocks.length}`);
   return {
-    updated: { ...src, lastSync: new Date().toISOString(), lastStatus: 'ok', lastError: null, importedCount: blocks.length },
+    updated: {
+      ...src,
+      lastSync: new Date().toISOString(),
+      lastStatus: lastError ? 'partial' : 'ok',
+      lastError: lastError || null,
+      importedCount: blocks.length,
+    },
     blocks,
     report,
   };
