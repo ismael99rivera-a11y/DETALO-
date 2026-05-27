@@ -383,36 +383,30 @@ async function syncSource(src) {
 }
 
 // ── VILLA LA PALMA CAPACITY BLOCKS ──────────────────────────────────────────
-// Calcula bloques de capacidad para anuncios combinados (unidades >= 2).
-// Reglas:
-//   disponibles == 1 → bloquear propIds de fuentes combinadas que estén libres
-//   disponibles == 0 → ya bloqueado naturalmente; safety-net para propIds libres
-//   disponibles >= 2 → sin acción
+// Para cada anuncio combinado (unidades >= 2) de VLP:
+//   disponibles_totales = 9 − villas_ocupadas_ese_día (sin importar cuáles)
+//   si disponibles_totales < unidades_del_anuncio → capacity-block en sus propIds
 function computeVLPCapacityBlocks(bookings, sources) {
-  // Fuentes combinadas de Villa La Palma
+  // Fuentes combinadas de VLP (unidades >= 2 con al menos un propId de VLP)
   const combinedSrcs = sources.filter(s => {
     const ids = s.propIds && s.propIds.length ? s.propIds : [s.propId];
     return (s.unidades || 1) >= 2 && ids.some(id => VLP.pids.includes(id));
   });
   if (!combinedSrcs.length) return [];
 
-  // Conjunto de propIds usados por fuentes combinadas
-  const combinedPids = new Set();
-  for (const src of combinedSrcs) {
-    const ids = src.propIds && src.propIds.length ? src.propIds : [src.propId];
-    for (const id of ids) { if (VLP.pids.includes(id)) combinedPids.add(id); }
-  }
-
-  // Reservas reales de VLP (excluir capacity-blocks para evitar ciclos)
+  // Ocupación real de VLP: excluir capacity-block (evitar ciclos) e ical-override
+  // (los overrides LIBERAN fechas, no las ocupan)
   const vlpBks = bookings.filter(b =>
-    b.type !== 'capacity-block' && VLP.pids.includes(b.pid) && b.s && b.e
+    b.type !== 'capacity-block' &&
+    b.type !== 'ical-override' &&
+    VLP.pids.includes(b.pid) && b.s && b.e
   );
   if (!vlpBks.length) return [];
 
-  // Mapa: fecha → Set<pid> ocupados ese día
+  // Mapa fecha → Set<pid> con villas ocupadas ese día
   const occ = new Map();
   for (const bk of vlpBks) {
-    let d   = new Date(bk.s + 'T12:00:00Z');
+    let d = new Date(bk.s + 'T12:00:00Z');
     const z = new Date(bk.e + 'T12:00:00Z');
     while (d <= z) {
       const ds = d.toISOString().slice(0, 10);
@@ -422,52 +416,53 @@ function computeVLPCapacityBlocks(bookings, sources) {
     }
   }
 
-  // Por cada día con ocupación, determinar qué propIds necesitan capacity-block
-  const blocksByDay = [];
-  for (const [ds, occSet] of [...occ.entries()].sort(([a], [b]) => a < b ? -1 : 1)) {
-    const available = VLP.total - occSet.size;
-    // Solo actuar cuando queda 1 o menos villa libre
-    if (available >= 2) continue;
-    // Bloquear TODOS los propIds combinados (no solo los libres): buildIcal filtra
-    // ical-blocks individuales del output del combinado, por eso el capacity-block
-    // es la señal autoritativa de "lleno" para ese anuncio.
-    const toPids = [...combinedPids];
-    if (toPids.length) blocksByDay.push({ ds, pids: toPids });
-  }
-  if (!blocksByDay.length) return [];
+  const allBlocks = [];
 
-  // Fusionar días consecutivos con el mismo conjunto de propIds
-  const ranges = [];
-  for (const { ds, pids: bp } of blocksByDay) {
-    const key = [...bp].sort().join(',');
-    if (ranges.length) {
-      const prev = ranges[ranges.length - 1];
-      if ([...prev.pids].sort().join(',') === key) {
+  // Procesar cada fuente combinada de forma independiente
+  for (const src of combinedSrcs) {
+    const srcPids = (src.propIds && src.propIds.length ? src.propIds : [src.propId])
+      .filter(id => VLP.pids.includes(id));
+    if (!srcPids.length) continue;
+
+    // Villas que necesita este anuncio (usa unidades configuradas)
+    const needed = src.unidades || 2;
+
+    // Fechas donde el total de villas disponibles en VLP es menor al necesario
+    const blockDates = [];
+    for (const [ds, occSet] of [...occ.entries()].sort(([a], [b]) => a < b ? -1 : 1)) {
+      if (VLP.total - occSet.size < needed) blockDates.push(ds);
+    }
+    if (!blockDates.length) continue;
+
+    // Fusionar fechas consecutivas en rangos
+    const ranges = [];
+    for (const ds of blockDates) {
+      if (ranges.length) {
+        const prev = ranges[ranges.length - 1];
         const next = new Date(prev.e + 'T12:00:00Z');
         next.setUTCDate(next.getUTCDate() + 1);
         if (next.toISOString().slice(0, 10) === ds) { prev.e = ds; continue; }
       }
+      ranges.push({ s: ds, e: ds });
     }
-    ranges.push({ s: ds, e: ds, pids: [...bp] });
+
+    for (const { s, e } of ranges) {
+      for (const pid of srcPids) {
+        allBlocks.push({
+          id: genId(), pid,
+          type: 'capacity-block',
+          name: 'Bloqueo por capacidad',
+          phone: '', s, e, income: 0, platform: '',
+          notes: `VLP: disponibilidad insuficiente para "${src.platform||'combinado'}" (necesita ${needed}, quedan < ${needed})`,
+          source: 'capacity',
+          syncedAt: new Date().toISOString(),
+        });
+      }
+    }
   }
 
-  // Crear entradas capacity-block
-  const blocks = [];
-  for (const { s, e, pids: bp } of ranges) {
-    for (const pid of bp) {
-      blocks.push({
-        id: genId(), pid,
-        type: 'capacity-block',
-        name: 'Bloqueo por capacidad',
-        phone: '', s, e, income: 0, platform: '',
-        notes: 'Villa La Palma: disponibilidad insuficiente para anuncio combinado',
-        source: 'capacity',
-        syncedAt: new Date().toISOString(),
-      });
-    }
-  }
-  slog(`[VLP Capacidad] ${combinedSrcs.length} fuentes combinadas → ${blocks.length} bloques generados`);
-  return blocks;
+  slog(`[VLP Capacidad] ${combinedSrcs.length} fuente(s) combinada(s) → ${allBlocks.length} bloques generados`);
+  return allBlocks;
 }
 
 async function _doSync() {
