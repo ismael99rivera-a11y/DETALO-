@@ -12,6 +12,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   --res-bg:#bbf7d0;--res-fg:#14532d;--res-bdr:#22c55e;
   --blk-bg:#fecaca;--blk-fg:#7f1d1d;--blk-bdr:#ef4444;
   --ical-bg:#ffedd5;--ical-fg:#92400e;--ical-bdr:#f97316;
+  --cap-bg:#f3e8ff;--cap-fg:#6b21a8;--cap-bdr:#a855f7;
   --cell-w:38px;--cell-h:36px;--prop-w:175px;
 }
 #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -27,7 +28,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .legend{display:flex;gap:14px}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#94a3b8}
 .leg-dot{width:10px;height:10px;border-radius:2px}
-.leg-dot.r{background:#22c55e}.leg-dot.b{background:#ef4444}.leg-dot.ic{background:#f97316}.leg-dot.a{background:#475569;opacity:.4}
+.leg-dot.r{background:#22c55e}.leg-dot.b{background:#ef4444}.leg-dot.ic{background:#f97316}.leg-dot.cap{background:#a855f7}.leg-dot.a{background:#475569;opacity:.4}
 .month-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
 .nav-btn{
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
@@ -106,18 +107,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dc.res{background:var(--res-bg)}.dc.res:hover{background:#86efac}
 .dc.blk{background:var(--blk-bg)}.dc.blk:hover{background:#fca5a5}
 .dc.icalblk{background:var(--ical-bg)}.dc.icalblk:hover{background:#fdba74}
+.dc.capblk{background:var(--cap-bg)}.dc.capblk:hover{background:#e9d5ff}
 
 .dc.bk-start{border-left:3px solid}
 .dc.res.bk-start{border-left-color:var(--res-bdr)}
 .dc.blk.bk-start{border-left-color:var(--blk-bdr)}
 .dc.icalblk.bk-start{border-left-color:var(--ical-bdr)}
+.dc.capblk.bk-start{border-left-color:var(--cap-bdr)}
 .dc.bk-end{border-right:2px solid}
 .dc.res.bk-end{border-right-color:var(--res-bdr)}
 .dc.blk.bk-end{border-right-color:var(--blk-bdr)}
 .dc.icalblk.bk-end{border-right-color:var(--ical-bdr)}
+.dc.capblk.bk-end{border-right-color:var(--cap-bdr)}
 
 .bk-label{position:absolute;top:50%;left:5px;right:3px;transform:translateY(-50%);font-size:.66rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1}
-.bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}
+.bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}.bk-label.cap{color:var(--cap-fg)}
 
 /* ── MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
@@ -136,6 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .badge.r{background:var(--res-bg);color:var(--res-fg)}
 .badge.b{background:var(--blk-bg);color:var(--blk-fg)}
 .badge.ic{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.badge.cap{background:#faf5ff;color:var(--cap-fg);border:1px solid #e9d5ff}
 .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
 .di label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:3px}
 .di .val{font-size:.88rem;font-weight:600;color:#1e293b}
@@ -240,6 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="leg-item"><div class="leg-dot r"></div>Reserva</div>
       <div class="leg-item"><div class="leg-dot b"></div>Bloqueo</div>
       <div class="leg-item"><div class="leg-dot ic"></div>iCal</div>
+      <div class="leg-item"><div class="leg-dot cap"></div>Capacidad</div>
       <div class="leg-item"><div class="leg-dot a"></div>Disponible</div>
     </div>
     <div id="syncChip" class="sync-chip idle" title="Estado de sincronización iCal">⏸ Sin fuentes</div>
@@ -479,6 +485,7 @@ function hasOverlap(pid,s,e,excId){
   return bookings.some(b=>{
     if(b.pid!==pid) return false;
     if(excId&&b.id===excId) return false;
+    if(b.type==='capacity-block') return false; // los manuales pueden sobreponerse
     return s<=b.e&&e>=b.s;
   });
 }
@@ -519,12 +526,13 @@ function renderCal(){
         if(bk){
           const isRes=bk.type==='reservation';
           const isIcal=bk.type==='ical-block';
-          cls+=isRes?' res':isIcal?' icalblk':' blk';
+          const isCap=bk.type==='capacity-block';
+          cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':' blk';
           if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
           if(isLast(bk,curY,curM,d))  cls+=' bk-end';
           if(isFirst(bk,curY,curM,d)){
-            const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):'Bloqueado';
-            const cc=isRes?'r':isIcal?'ic':'b';
+            const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):isCap?'Capacidad':'Bloqueado';
+            const cc=isRes?'r':isIcal?'ic':isCap?'cap':'b';
             lbl=`<span class="bk-label ${cc}">${txt}</span>`;
           }
           h+=`<div class="${cls}" data-bk="${bk.id}" data-ds="${ds}" data-pid="${prop.id}">${lbl}</div>`;
@@ -557,10 +565,11 @@ function openView(id){
   const prop=PROPS.find(p=>p.id===bk.pid);
   const isRes=bk.type==='reservation';
   const isIcal=bk.type==='ical-block';
+  const isCap=bk.type==='capacity-block';
   const nights=nightCount(bk.s,bk.e);
-  document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':isIcal?'Bloqueo iCal':'Detalle de Bloqueo';
-  const badge=isRes?'🟢 Reserva':isIcal?'🔗 Importado de iCal':'🔴 Bloqueo por dueño';
-  const bc=isRes?'r':isIcal?'ic':'b';
+  document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':isIcal?'Bloqueo iCal':isCap?'Bloqueo por Capacidad':'Detalle de Bloqueo';
+  const badge=isRes?'🟢 Reserva':isIcal?'🔗 Importado de iCal':isCap?'🔒 Bloqueo por capacidad':'🔴 Bloqueo por dueño';
+  const bc=isRes?'r':isIcal?'ic':isCap?'cap':'b';
   let h=`<div class="badge ${bc}">${badge}</div><div class="dgrid">
     <div class="di full"><label>Propiedad</label>
       <div class="val">${prop?prop.name:'—'}${prop&&prop.group?' · '+prop.group:''} · ${prop?prop.dest:''}</div></div>`;
@@ -568,6 +577,8 @@ function openView(id){
     <div class="di"><label>Teléfono</label><div class="val">${bk.phone||'—'}</div></div>`;
   if(isIcal) h+=`<div class="di"><label>Fuente</label><div class="val">${bk.platform||'iCal'}</div></div>
     <div class="di"><label>Sincronizado</label><div class="val">${fmtTime(bk.syncedAt)||'—'}</div></div>`;
+  if(isCap) h+=`<div class="di full"><label>Motivo</label><div class="val">${bk.notes||'Bloqueo automático por capacidad'}</div></div>
+    <div class="di"><label>Calculado</label><div class="val">${fmtTime(bk.syncedAt)||'—'}</div></div>`;
   h+=`<div class="di"><label>Entrada</label><div class="val">${fmtDate(bk.s)}</div></div>
     <div class="di"><label>Salida</label><div class="val">${fmtDate(bk.e)}</div></div>
     <div class="di"><label>Noches</label><div class="val">${nights} noche${nights!==1?'s':''}</div></div>`;
@@ -576,8 +587,8 @@ function openView(id){
   if(bk.notes) h+=`<div class="di full"><label>Notas</label><div class="val">${bk.notes}</div></div>`;
   h+='</div>';
   document.getElementById('viewBody').innerHTML=h;
-  // Ocultar botón eliminar para bloques iCal (se gestionan automáticamente)
-  document.getElementById('btnDel').style.display = isIcal ? 'none' : '';
+  // Ocultar botón eliminar para bloques gestionados automáticamente
+  document.getElementById('btnDel').style.display = (isIcal || isCap) ? 'none' : '';
   document.getElementById('viewOv').classList.add('on');
 }
 function closeView(){ document.getElementById('viewOv').classList.remove('on'); activeId=null; }

@@ -27,6 +27,14 @@ for (const d of [DATA_DIR, PUBLIC_DIR]) {
 
 console.log(`[Detalo] Datos en: ${DATA_DIR}`);
 
+// ── VILLA LA PALMA — CAPACIDAD (9 villas físicas, anuncios combinados) ──────
+// Fuentes con unidades >= 2 son "anuncios combinados". Cuando quedan < 2
+// villas libres, sus propIds se bloquean para evitar doble-reserva.
+const VLP = {
+  pids:  ['tq1','tq2','tq3','tq4','tq5','tq6','tq7','tq8','tq9'],
+  total: 9,
+};
+
 // ── PROPERTY MAP (para nombres en iCal de salida) ────────
 const PROP_NAMES = {
   tq1:'Villa 1',   tq2:'Villa 2',   tq3:'Villa 3',   tq4:'Villa 4',   tq5:'Villa 5',
@@ -325,12 +333,100 @@ async function syncSource(src) {
   return result;
 }
 
+// ── VILLA LA PALMA CAPACITY BLOCKS ──────────────────────────────────────────
+// Calcula bloques de capacidad para anuncios combinados (unidades >= 2).
+// Reglas:
+//   disponibles == 1 → bloquear propIds de fuentes combinadas que estén libres
+//   disponibles == 0 → ya bloqueado naturalmente; safety-net para propIds libres
+//   disponibles >= 2 → sin acción
+function computeVLPCapacityBlocks(bookings, sources) {
+  // Fuentes combinadas de Villa La Palma
+  const combinedSrcs = sources.filter(s => {
+    const ids = s.propIds && s.propIds.length ? s.propIds : [s.propId];
+    return (s.unidades || 1) >= 2 && ids.some(id => VLP.pids.includes(id));
+  });
+  if (!combinedSrcs.length) return [];
+
+  // Conjunto de propIds usados por fuentes combinadas
+  const combinedPids = new Set();
+  for (const src of combinedSrcs) {
+    const ids = src.propIds && src.propIds.length ? src.propIds : [src.propId];
+    for (const id of ids) { if (VLP.pids.includes(id)) combinedPids.add(id); }
+  }
+
+  // Reservas reales de VLP (excluir capacity-blocks para evitar ciclos)
+  const vlpBks = bookings.filter(b =>
+    b.type !== 'capacity-block' && VLP.pids.includes(b.pid) && b.s && b.e
+  );
+  if (!vlpBks.length) return [];
+
+  // Mapa: fecha → Set<pid> ocupados ese día
+  const occ = new Map();
+  for (const bk of vlpBks) {
+    let d   = new Date(bk.s + 'T12:00:00Z');
+    const z = new Date(bk.e + 'T12:00:00Z');
+    while (d <= z) {
+      const ds = d.toISOString().slice(0, 10);
+      if (!occ.has(ds)) occ.set(ds, new Set());
+      occ.get(ds).add(bk.pid);
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+  }
+
+  // Por cada día con ocupación, determinar qué propIds necesitan capacity-block
+  const blocksByDay = [];
+  for (const [ds, occSet] of [...occ.entries()].sort(([a], [b]) => a < b ? -1 : 1)) {
+    const available = VLP.total - occSet.size;
+    // Solo actuar cuando queda 1 o menos villa libre
+    if (available >= 2) continue;
+    // Bloquear propIds combinados que aún están libres ese día
+    const toPids = [...combinedPids].filter(p => !occSet.has(p));
+    if (toPids.length) blocksByDay.push({ ds, pids: toPids });
+  }
+  if (!blocksByDay.length) return [];
+
+  // Fusionar días consecutivos con el mismo conjunto de propIds
+  const ranges = [];
+  for (const { ds, pids: bp } of blocksByDay) {
+    const key = [...bp].sort().join(',');
+    if (ranges.length) {
+      const prev = ranges[ranges.length - 1];
+      if ([...prev.pids].sort().join(',') === key) {
+        const next = new Date(prev.e + 'T12:00:00Z');
+        next.setUTCDate(next.getUTCDate() + 1);
+        if (next.toISOString().slice(0, 10) === ds) { prev.e = ds; continue; }
+      }
+    }
+    ranges.push({ s: ds, e: ds, pids: [...bp] });
+  }
+
+  // Crear entradas capacity-block
+  const blocks = [];
+  for (const { s, e, pids: bp } of ranges) {
+    for (const pid of bp) {
+      blocks.push({
+        id: genId(), pid,
+        type: 'capacity-block',
+        name: 'Bloqueo por capacidad',
+        phone: '', s, e, income: 0, platform: '',
+        notes: 'Villa La Palma: disponibilidad insuficiente para anuncio combinado',
+        source: 'capacity',
+        syncedAt: new Date().toISOString(),
+      });
+    }
+  }
+  slog(`[VLP Capacidad] ${combinedSrcs.length} fuentes combinadas → ${blocks.length} bloques generados`);
+  return blocks;
+}
+
 async function _doSync() {
   lastSyncLog = [];
   const sources = readJSON(SOURCES_F, []);
   if (!sources.length) { slog('Sin fuentes iCal configuradas.'); return; }
   slog(`=== Sync iniciado: ${new Date().toISOString()} | ${sources.length} fuente(s) ===`);
   let bookings = readJSON(BOOKINGS_F, []);
+  // Limpiar capacity-blocks anteriores; se recalcularán al final
+  bookings = bookings.filter(b => b.type !== 'capacity-block');
   const updatedSources = [];
   for (const src of sources) {
     slog(`\nFuente: ${src.platform || '(sin plataforma)'} | propIds: ${(src.propIds||[src.propId]).join(',')}`);
@@ -343,10 +439,14 @@ async function _doSync() {
     else
       slog(`  ✗ ${src.propId}: ${updated.lastError}`);
   }
+  // Calcular y agregar bloques de capacidad (Villa La Palma)
+  const capBlocks = computeVLPCapacityBlocks(bookings, updatedSources);
+  bookings.push(...capBlocks);
+
   writeJSON(BOOKINGS_F, bookings);
   writeJSON(SOURCES_F,  updatedSources);
   syncState.lastRun = new Date().toISOString();
-  slog(`\n=== Sync completado: ${syncState.lastRun} | Total bookings en DB: ${bookings.length} ===`);
+  slog(`\n=== Sync completado: ${syncState.lastRun} | Total bookings en DB: ${bookings.length} (${capBlocks.length} de capacidad) ===`);
 }
 
 async function syncAll() {
