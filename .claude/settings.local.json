@@ -29,7 +29,8 @@
       "Bash(curl -s http://localhost:3000/api/sync/debug)",
       "Bash(findstr :3000)",
       "Bash(findstr LISTENING)",
-      "PowerShell(Stop-Process -Id 16420 -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Stop-Process -Id 16420 -Force -ErrorAction SilentlyContinue)",
+      "Bash(node --check \"C:\\\\Users\\\\detal\\\\Desktop\\\\DETALO\\\\server.js\")"
     ]
   }
 }

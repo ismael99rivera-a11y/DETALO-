@@ -132,9 +132,19 @@ function esc(s) {
                   .replace(/,/g,'\\,').replace(/\n/g,'\\n');
 }
 
-function buildIcal(propId, allBookings) {
+function buildIcal(propId, allBookings, allSources) {
   const name  = PROP_NAMES[propId] || propId;
   const stamp = new Date().toISOString().replace(/[-:.]/g,'').slice(0,15) + 'Z';
+
+  // Para propIds que pertenecen a un anuncio combinado de VLP: ignorar ical-blocks de fuentes
+  // individuales. La disponibilidad del combinado la controla solo la lógica de capacidad.
+  const vlpCombSrc = (allSources || []).find(s => {
+    const ids = s.propIds && s.propIds.length ? s.propIds : [s.propId];
+    return (s.unidades || 1) >= 2 && ids.includes(propId) && VLP.pids.includes(propId);
+  });
+  const skipNonCombIcal = !!vlpCombSrc;
+  const combSrcId = vlpCombSrc ? vlpCombSrc.id : null;
+
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -144,8 +154,13 @@ function buildIcal(propId, allBookings) {
     `X-WR-CALNAME:Detalo - ${esc(name)}`,
     'X-WR-TIMEZONE:America/Mexico_City',
   ];
+  const overrides = allBookings.filter(b => b.type === 'ical-override' && b.pid === propId);
   for (const bk of allBookings.filter(b => b.pid === propId)) {
     if (!bk.s || !bk.e) continue;
+    if (bk.type === 'ical-override') continue;
+    if (bk.type === 'ical-block' && overrides.some(o => bk.s >= o.s && bk.e <= o.e)) continue;
+    // Anuncio combinado VLP: omitir ical-blocks de fuentes individuales (no del propio combinado)
+    if (skipNonCombIcal && bk.type === 'ical-block' && bk.sourceId !== combSrcId) continue;
     const dtS = bk.s.replace(/-/g,'');
     const dtE = addDays(bk.e, 1).replace(/-/g,''); // DTEND exclusivo
     const sum = bk.type === 'reservation' ? esc(bk.name || 'Reserva') : 'BLOCKED';
@@ -165,7 +180,7 @@ function buildIcal(propId, allBookings) {
 }
 
 app.get('/api/ical/:propId.ics', (req, res) => {
-  const ics = buildIcal(req.params.propId, readJSON(BOOKINGS_F, []));
+  const ics = buildIcal(req.params.propId, readJSON(BOOKINGS_F, []), readJSON(SOURCES_F, []));
   res.setHeader('Content-Type',        'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', `inline; filename="${req.params.propId}.ics"`);
   res.send(ics);
@@ -413,8 +428,10 @@ function computeVLPCapacityBlocks(bookings, sources) {
     const available = VLP.total - occSet.size;
     // Solo actuar cuando queda 1 o menos villa libre
     if (available >= 2) continue;
-    // Bloquear propIds combinados que aún están libres ese día
-    const toPids = [...combinedPids].filter(p => !occSet.has(p));
+    // Bloquear TODOS los propIds combinados (no solo los libres): buildIcal filtra
+    // ical-blocks individuales del output del combinado, por eso el capacity-block
+    // es la señal autoritativa de "lleno" para ese anuncio.
+    const toPids = [...combinedPids];
     if (toPids.length) blocksByDay.push({ ds, pids: toPids });
   }
   if (!blocksByDay.length) return [];
@@ -472,6 +489,17 @@ async function _doSync() {
       slog(`  ✓ ${src.platform || src.propId}: ${updated.importedCount} bloques guardados`);
     else
       slog(`  ✗ ${src.propId}: ${updated.lastError}`);
+  }
+  // Suprimir ical-blocks cubiertos por ical-overrides manuales
+  const overrides = bookings.filter(b => b.type === 'ical-override');
+  if (overrides.length) {
+    const before = bookings.length;
+    bookings = bookings.filter(b => {
+      if (b.type !== 'ical-block') return true;
+      return !overrides.some(o => o.pid === b.pid && b.s >= o.s && b.e <= o.e);
+    });
+    const suppressed = before - bookings.length;
+    if (suppressed > 0) slog(`[Overrides] ${suppressed} bloque(s) iCal suprimidos por override manual`);
   }
   // Calcular y agregar bloques de capacidad (Villa La Palma)
   const capBlocks = computeVLPCapacityBlocks(bookings, updatedSources);

@@ -13,6 +13,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   --blk-bg:#fecaca;--blk-fg:#7f1d1d;--blk-bdr:#ef4444;
   --ical-bg:#ffedd5;--ical-fg:#92400e;--ical-bdr:#f97316;
   --cap-bg:#f3e8ff;--cap-fg:#6b21a8;--cap-bdr:#a855f7;
+  --free-bg:#f0fdf4;--free-fg:#15803d;--free-bdr:#86efac;
   --cell-w:38px;--cell-h:36px;--prop-w:175px;
 }
 #app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -28,7 +29,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .legend{display:flex;gap:14px}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#94a3b8}
 .leg-dot{width:10px;height:10px;border-radius:2px}
-.leg-dot.r{background:#22c55e}.leg-dot.b{background:#ef4444}.leg-dot.ic{background:#f97316}.leg-dot.cap{background:#a855f7}.leg-dot.a{background:#475569;opacity:.4}
+.leg-dot.r{background:#22c55e}.leg-dot.b{background:#ef4444}.leg-dot.ic{background:#f97316}.leg-dot.cap{background:#a855f7}.leg-dot.free{background:#22c55e;border:1px dashed #15803d}.leg-dot.a{background:#475569;opacity:.4}
 .month-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
 .nav-btn{
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
@@ -108,20 +109,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dc.blk{background:var(--blk-bg)}.dc.blk:hover{background:#fca5a5}
 .dc.icalblk{background:var(--ical-bg)}.dc.icalblk:hover{background:#fdba74}
 .dc.capblk{background:var(--cap-bg)}.dc.capblk:hover{background:#e9d5ff}
+.dc.freebk{background:var(--free-bg);border-style:dashed!important}.dc.freebk:hover{background:#dcfce7}
 
 .dc.bk-start{border-left:3px solid}
 .dc.res.bk-start{border-left-color:var(--res-bdr)}
 .dc.blk.bk-start{border-left-color:var(--blk-bdr)}
 .dc.icalblk.bk-start{border-left-color:var(--ical-bdr)}
 .dc.capblk.bk-start{border-left-color:var(--cap-bdr)}
+.dc.freebk.bk-start{border-left-color:var(--free-bdr)}
 .dc.bk-end{border-right:2px solid}
 .dc.res.bk-end{border-right-color:var(--res-bdr)}
 .dc.blk.bk-end{border-right-color:var(--blk-bdr)}
 .dc.icalblk.bk-end{border-right-color:var(--ical-bdr)}
 .dc.capblk.bk-end{border-right-color:var(--cap-bdr)}
+.dc.freebk.bk-end{border-right-color:var(--free-bdr)}
 
 .bk-label{position:absolute;top:50%;left:5px;right:3px;transform:translateY(-50%);font-size:.66rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1}
-.bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}.bk-label.cap{color:var(--cap-fg)}
+.bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}.bk-label.cap{color:var(--cap-fg)}.bk-label.free{color:var(--free-fg)}
 
 /* ── MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
@@ -141,6 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .badge.b{background:var(--blk-bg);color:var(--blk-fg)}
 .badge.ic{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
 .badge.cap{background:#faf5ff;color:var(--cap-fg);border:1px solid #e9d5ff}
+.badge.free{background:var(--free-bg);color:var(--free-fg);border:1px dashed var(--free-bdr)}
 .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
 .di label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:3px}
 .di .val{font-size:.88rem;font-weight:600;color:#1e293b}
@@ -164,6 +169,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-pri{background:#0ea5e9;color:#fff}.btn-pri:hover{background:#0284c7}
 .btn-del{background:#ef4444;color:#fff}.btn-del:hover{background:#dc2626}
 .btn-sec{background:#f1f5f9;color:#475569}.btn-sec:hover{background:#e2e8f0}
+.btn-warn{background:#f59e0b;color:#fff}.btn-warn:hover{background:#d97706}
+.btn-ghost{background:#f0fdf4;color:#15803d;border:1px solid #86efac}.btn-ghost:hover{background:#dcfce7}
 .req{color:#ef4444}
 
 /* ── SETTINGS MODAL ── */
@@ -279,6 +286,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
     <div class="mbody" id="viewBody"></div>
     <div class="mfoot" id="viewFoot">
+      <button class="btn btn-warn" id="btnLiberar" style="display:none">Liberar fechas</button>
       <button class="btn btn-del" id="btnDel">Eliminar</button>
       <button class="btn btn-sec" id="btnViewCerrar">Cerrar</button>
     </div>
@@ -531,12 +539,13 @@ function renderCal(){
           const isRes=bk.type==='reservation';
           const isIcal=bk.type==='ical-block';
           const isCap=bk.type==='capacity-block';
-          cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':' blk';
+          const isFree=bk.type==='ical-override';
+          cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
           if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
           if(isLast(bk,curY,curM,d))  cls+=' bk-end';
           if(isFirst(bk,curY,curM,d)){
-            const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):isCap?'Capacidad':'Bloqueado';
-            const cc=isRes?'r':isIcal?'ic':isCap?'cap':'b';
+            const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):isCap?'Capacidad':isFree?'Libre':'Bloqueado';
+            const cc=isRes?'r':isIcal?'ic':isCap?'cap':isFree?'free':'b';
             lbl=`<span class="bk-label ${cc}">${txt}</span>`;
           }
           h+=`<div class="${cls}" data-bk="${bk.id}" data-ds="${ds}" data-pid="${prop.id}">${lbl}</div>`;
@@ -570,10 +579,11 @@ function openView(id){
   const isRes=bk.type==='reservation';
   const isIcal=bk.type==='ical-block';
   const isCap=bk.type==='capacity-block';
+  const isFree=bk.type==='ical-override';
   const nights=nightCount(bk.s,bk.e);
-  document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':isIcal?'Bloqueo iCal':isCap?'Bloqueo por Capacidad':'Detalle de Bloqueo';
-  const badge=isRes?'🟢 Reserva':isIcal?'🔗 Importado de iCal':isCap?'🔒 Bloqueo por capacidad':'🔴 Bloqueo por dueño';
-  const bc=isRes?'r':isIcal?'ic':isCap?'cap':'b';
+  document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':isIcal?'Bloqueo iCal':isCap?'Bloqueo por Capacidad':isFree?'Override — Fechas libres':'Detalle de Bloqueo';
+  const badge=isRes?'🟢 Reserva':isIcal?'🔗 Importado de iCal':isCap?'🔒 Bloqueo por capacidad':isFree?'🟩 Fechas liberadas (override)':'🔴 Bloqueo por dueño';
+  const bc=isRes?'r':isIcal?'ic':isCap?'cap':isFree?'free':'b';
   let h=`<div class="badge ${bc}">${badge}</div><div class="dgrid">
     <div class="di full"><label>Propiedad</label>
       <div class="val">${prop?prop.name:'—'}${prop&&prop.group?' · '+prop.group:''} · ${prop?prop.dest:''}</div></div>`;
@@ -583,16 +593,20 @@ function openView(id){
     <div class="di"><label>Sincronizado</label><div class="val">${fmtTime(bk.syncedAt)||'—'}</div></div>`;
   if(isCap) h+=`<div class="di full"><label>Motivo</label><div class="val">${bk.notes||'Bloqueo automático por capacidad'}</div></div>
     <div class="di"><label>Calculado</label><div class="val">${fmtTime(bk.syncedAt)||'—'}</div></div>`;
+  if(isFree) h+=`<div class="di full"><label>Efecto</label><div class="val">Suprime el bloqueo iCal en el calendario de salida hasta el próximo sync</div></div>`;
   h+=`<div class="di"><label>Entrada</label><div class="val">${fmtDate(bk.s)}</div></div>
     <div class="di"><label>Salida</label><div class="val">${fmtDate(bk.e)}</div></div>
     <div class="di"><label>Noches</label><div class="val">${nights} noche${nights!==1?'s':''}</div></div>`;
   if(isRes) h+=`<div class="di"><label>Ingreso bruto</label><div class="val">${fmtMoney(bk.income)}</div></div>
     <div class="di"><label>Plataforma</label><div class="val">${bk.platform||'—'}</div></div>`;
-  if(bk.notes) h+=`<div class="di full"><label>Notas</label><div class="val">${bk.notes}</div></div>`;
+  if(bk.notes&&!isFree) h+=`<div class="di full"><label>Notas</label><div class="val">${bk.notes}</div></div>`;
   h+='</div>';
   document.getElementById('viewBody').innerHTML=h;
-  // Ocultar botón eliminar para bloques gestionados automáticamente
-  document.getElementById('btnDel').style.display = (isIcal || isCap) ? 'none' : '';
+  const btnDel=document.getElementById('btnDel');
+  const btnLib=document.getElementById('btnLiberar');
+  btnDel.style.display = (isIcal||isCap) ? 'none' : '';
+  btnDel.textContent   = isFree ? 'Eliminar override' : 'Eliminar';
+  btnLib.style.display = isIcal ? '' : 'none';
   document.getElementById('viewOv').classList.add('on');
 }
 function closeView(){ document.getElementById('viewOv').classList.remove('on'); activeId=null; }
@@ -1082,6 +1096,25 @@ async function guardarMultiBlock(){
 }
 
 // ═══════════════════════════════════════════
+// LIBERAR BLOQUEO iCAL (override manual)
+// ═══════════════════════════════════════════
+async function liberarIcalBlock(bk){
+  const prop=PROPS.find(p=>p.id===bk.pid);
+  const label=bk.name||bk.platform||'iCal';
+  if(!confirm(`¿Liberar "${label}" (${fmtDate(bk.s)} – ${fmtDate(bk.e)}) en ${prop?prop.name:bk.pid}?\n\nSe crea un override que marca estas fechas como disponibles en el iCal de salida.`)) return;
+  try {
+    await api('POST','/api/bookings',{
+      pid:bk.pid, type:'ical-override',
+      name:'Override manual', phone:'', s:bk.s, e:bk.e,
+      income:0, platform:'', notes:`Libera: ${label}`,
+    });
+    await refreshBookings();
+    closeView();
+    renderCal();
+  } catch(err){ alert('Error al crear override: '+err.message); }
+}
+
+// ═══════════════════════════════════════════
 // NAVEGACIÓN
 // ═══════════════════════════════════════════
 function updateLabel(){
@@ -1217,6 +1250,61 @@ async function init(){
     }
   });
 
+  // ── Touch (iPad / móvil): tap abre formulario, long-press+drag selecciona rango ──
+  let touchTimer=null, touchLong=false, touchStartEl=null, touchStartX=0, touchStartY=0;
+
+  calShellEl.addEventListener('touchstart',e=>{
+    const t=e.touches[0];
+    const dc=document.elementFromPoint(t.clientX,t.clientY)?.closest('.dc');
+    if(!dc||!dc.dataset.ds||!dc.dataset.pid) return;
+    touchLong=false; touchStartEl=dc; touchStartX=t.clientX; touchStartY=t.clientY;
+    touchTimer=setTimeout(()=>{
+      touchLong=true;
+      if(!dc.dataset.bk){
+        drag={on:true,startDs:dc.dataset.ds,curDs:dc.dataset.ds,startPid:dc.dataset.pid,curPid:dc.dataset.pid,moved:false};
+        calShellEl.classList.add('dragging');
+        updateDragHighlight();
+        if(navigator.vibrate) navigator.vibrate(40);
+      }
+    },500);
+  },{passive:true});
+
+  calShellEl.addEventListener('touchmove',e=>{
+    const t=e.touches[0];
+    if(touchLong&&drag.on){
+      e.preventDefault();
+      const el=document.elementFromPoint(t.clientX,t.clientY)?.closest('.dc');
+      if(el&&el.dataset.ds&&el.dataset.pid&&(el.dataset.ds!==drag.curDs||el.dataset.pid!==drag.curPid)){
+        drag.moved=true; drag.curDs=el.dataset.ds; drag.curPid=el.dataset.pid;
+        updateDragHighlight();
+      }
+    } else if(touchTimer&&Math.hypot(t.clientX-touchStartX,t.clientY-touchStartY)>8){
+      clearTimeout(touchTimer); touchTimer=null;
+    }
+  },{passive:false});
+
+  calShellEl.addEventListener('touchend',e=>{
+    clearTimeout(touchTimer); touchTimer=null;
+    if(!touchLong) return; // tap corto → el evento click lo maneja
+    touchLong=false; drag.on=false;
+    calShellEl.classList.remove('dragging');
+    suppressClick=true;
+    setTimeout(()=>{ suppressClick=false; },300);
+    if(drag.startDs&&drag.moved&&(drag.startDs!==drag.curDs||drag.startPid!==drag.curPid)){
+      const s=drag.startDs<=drag.curDs?drag.startDs:drag.curDs;
+      const end=drag.startDs<=drag.curDs?drag.curDs:drag.startDs;
+      const si=PROPS.findIndex(p=>p.id===drag.startPid),ci=PROPS.findIndex(p=>p.id===drag.curPid);
+      const pids=PROPS.slice(Math.min(si,ci),Math.max(si,ci)+1).map(p=>p.id);
+      clearDragHighlight();
+      openMultiBlock(pids,s,end);
+    } else {
+      clearDragHighlight();
+      const dc=touchStartEl;
+      if(dc){ if(dc.dataset.bk) openView(dc.dataset.bk); else if(dc.dataset.ds&&dc.dataset.pid) openForm(dc.dataset.pid,dc.dataset.ds); }
+    }
+    drag={on:false,startDs:null,curDs:null,startPid:null,curPid:null,moved:false};
+  });
+
   // Fecha entrada → ajustar mínimo de salida
   document.getElementById('fStart').addEventListener('change',function(){
     const end=document.getElementById('fEnd');
@@ -1229,6 +1317,9 @@ async function init(){
   document.getElementById('btnViewCerrar').addEventListener('click',closeView);
   document.getElementById('viewOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeView();});
   document.getElementById('btnDel').addEventListener('click',()=>{if(activeId)eliminar(activeId);});
+  document.getElementById('btnLiberar').addEventListener('click',()=>{
+    if(activeId){ const bk=bookings.find(b=>b.id===activeId); if(bk) liberarIcalBlock(bk); }
+  });
 
   // Modal form
   document.getElementById('formClose').addEventListener('click',closeForm);
