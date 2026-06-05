@@ -246,6 +246,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .src-item:last-child{border-bottom:none}
 .src-missing-row{display:flex;flex-wrap:wrap;gap:5px;padding:5px 12px 10px}
 .src-missing-pill{font-size:.69rem;color:#94a3b8;border:1px dashed #cbd5e1;border-radius:12px;padding:2px 10px}
+
+/* ── ALERT BADGE ── */
+.alert-btn{position:relative;background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:#94a3b8;font-size:1.1rem;transition:background .15s}
+.alert-btn:hover{background:rgba(255,255,255,.12)}
+.alert-badge{position:absolute;top:-3px;right:-3px;background:#ef4444;color:#fff;font-size:.58rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;pointer-events:none}
+.alert-badge.hidden{display:none}
+
+/* ── PANEL DE ALERTAS ── */
+.alerts-box{width:560px}
+.alert-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:8px;font-size:.82rem}
+.alert-item.error{background:#fef2f2;border:1px solid #fecaca}
+.alert-item.warning{background:#fffbeb;border:1px solid #fde68a}
+.alert-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.alert-msg{color:#1e293b;line-height:1.4}
+.alert-empty{text-align:center;color:#94a3b8;padding:30px;font-size:.9rem}
+
+/* ── CONFLICTO EN CELDA ── */
+.dc.conflict{background:#fef9c3!important;outline:1.5px solid #eab308;z-index:2}
+.dc.conflict:hover{background:#fef08a!important}
+.dc.conflict.bk-start{border-left-color:#eab308}
+
+/* ── VISTA TABS PRINCIPALES ── */
+.main-tabs{display:flex;align-items:center;gap:4px;margin-left:8px}
+.main-tab{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#94a3b8;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600;transition:all .15s}
+.main-tab.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
+.main-tab:hover:not(.on){background:rgba(255,255,255,.18);color:#e2e8f0}
+
+/* ── PRÓXIMAS RESERVAS ── */
+#upcomingPanel{flex:1;overflow-y:auto;padding:16px 20px;display:none;flex-direction:column;gap:10px}
+#upcomingPanel.visible{display:flex}
+.up-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.up-filter-lbl{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+.up-dest-btn{background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;padding:4px 12px;border-radius:16px;cursor:pointer;font-size:.76rem;font-weight:600;transition:all .15s}
+.up-dest-btn.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
+.up-counters{display:flex;gap:12px;margin-bottom:4px}
+.up-counter{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;text-align:center}
+.up-counter .uc-num{font-size:1.5rem;font-weight:800;color:#0f172a}
+.up-counter .uc-lbl{font-size:.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em}
+.up-section-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;padding:4px 0 2px;border-bottom:1px solid #e2e8f0;margin-bottom:2px}
+.up-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:box-shadow .15s}
+.up-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.up-card.today{background:#f0fdf4;border-color:#86efac;border-width:2px}
+.up-card.tomorrow{background:#f0f9ff;border-color:#bae6fd}
+.up-card-date{min-width:52px;text-align:center;background:#f8fafc;border-radius:8px;padding:8px 6px;flex-shrink:0}
+.up-card-date .ucd-day{font-size:1.5rem;font-weight:800;color:#0f172a;line-height:1}
+.up-card-date .ucd-month{font-size:.68rem;text-transform:uppercase;color:#64748b;font-weight:700}
+.up-card-date .ucd-nights{font-size:.65rem;color:#94a3b8;margin-top:2px}
+.up-card.today .up-card-date{background:#dcfce7}
+.up-card.tomorrow .up-card-date{background:#e0f2fe}
+.up-card-info{flex:1;min-width:0}
+.up-card-name{font-size:.95rem;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.up-card-prop{font-size:.76rem;color:#64748b;margin-top:2px}
+.up-card-plat{display:inline-flex;align-items:center;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;background:#eff6ff;color:#1d4ed8;margin-top:4px}
+.up-card-dates{font-size:.76rem;color:#475569;margin-top:6px}
+.up-card-notes{font-size:.74rem;color:#64748b;margin-top:4px;white-space:pre-wrap}
+.up-card-phone{margin-top:8px}
+.up-phone-link{display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;text-decoration:none;padding:5px 12px;border-radius:16px;font-size:.76rem;font-weight:700;transition:all .15s}
+.up-phone-link:hover{background:#dcfce7;border-color:#4ade80}
+.up-empty{text-align:center;color:#94a3b8;padding:40px;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -259,10 +319,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="leg-item"><div class="leg-dot cap"></div>Capacidad</div>
       <div class="leg-item"><div class="leg-dot a"></div>Disponible</div>
     </div>
+    <div class="main-tabs">
+      <button class="main-tab on" id="tabCal">📅 Calendario</button>
+      <button class="main-tab" id="tabUpcoming">🔑 Próximas Reservas</button>
+    </div>
     <div id="syncChip" class="sync-chip idle" title="Estado de sincronización iCal">⏸ Sin fuentes</div>
     <button class="btn-sync" id="btnSyncHdr" title="Sincronizar fuentes iCal ahora">🔄 Sync</button>
+    <button class="alert-btn" id="btnAlerts" title="Ver alertas del sistema">
+      🔔
+      <span class="alert-badge hidden" id="alertBadge">0</span>
+    </button>
     <button class="btn-settings" id="btnSettings">⚙ Sincronización</button>
-    <div class="month-nav">
+    <div class="month-nav" id="monthNav">
       <button class="nav-btn" id="btnPrev">&#8249;</button>
       <div class="month-lbl" id="monthLbl"></div>
       <button class="nav-btn" id="btnNext">&#8250;</button>
@@ -275,6 +343,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div style="padding:40px;text-align:center;color:#94a3b8;font-size:.9rem">Cargando…</div>
     </div>
   </div>
+
+  <div id="upcomingPanel"></div>
 </div>
 
 <!-- ═══ MODAL VER RESERVA ═══ -->
@@ -341,6 +411,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="mfoot">
       <button class="btn btn-sec" id="btnFormCerrar">Cancelar</button>
       <button class="btn btn-pri" id="btnGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ALERTAS ═══ -->
+<div class="overlay" id="alertsOv">
+  <div class="mbox alerts-box">
+    <div class="mhdr">
+      <div class="mtitle">🔔 Alertas del sistema</div>
+      <button class="mclose" id="alertsClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <div class="alert-list" id="alertList"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="alertsCerrar">Cerrar</button>
     </div>
   </div>
 </div>
@@ -507,6 +593,7 @@ function hasOverlap(pid,s,e,excId){
 // ═══════════════════════════════════════════
 function renderCal(){
   const total=daysInMonth(curY,curM);
+  const conflictCells = getConflictPids();
   let h='';
 
   h+=`<div class="day-hdr-row"><div class="corner"></div>`;
@@ -532,10 +619,24 @@ function renderCal(){
         const bk=bkForCell(prop.id,curY,curM,d);
         const wk=isWeekend(curY,curM,d),tod=isToday(curY,curM,d);
         const ds=dStr(curY,curM,d);
+        const hasConflict = conflictCells.has(prop.id+'|'+ds);
         let cls='dc',lbl='';
         if(wk) cls+=' wknd';
         if(tod) cls+=' today-col';
-        if(bk){
+        if(hasConflict){
+          // Celda con conflicto: amarillo con ⚠️
+          cls+=' conflict';
+          if(bk){
+            if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
+            if(isLast(bk,curY,curM,d))  cls+=' bk-end';
+          }
+          // Encontrar los dos bookings en conflicto
+          const allOnDay = bookings.filter(b=>b.pid===prop.id&&ds>=b.s&&ds<=b.e&&b.type!=='capacity-block'&&b.type!=='ical-override');
+          const src1 = allOnDay[0]?.platform||allOnDay[0]?.type||'?';
+          const src2 = allOnDay[1]?.platform||allOnDay[1]?.type||src1;
+          lbl=`<span class="bk-label b" style="color:#854d0e">⚠️ ${src1} vs ${src2}</span>`;
+          h+=`<div class="${cls}" data-bk="${bk?.id||''}" data-ds="${ds}" data-pid="${prop.id}">${lbl}</div>`;
+        } else if(bk){
           const isRes=bk.type==='reservation';
           const isIcal=bk.type==='ical-block';
           const isCap=bk.type==='capacity-block';
@@ -662,6 +763,7 @@ async function guardar(){
     else     { await api('POST','/api/bookings',bk); }
     await refreshBookings();
     closeForm(); renderCal();
+    updateAlerts();
   } catch(err){ alert('Error al guardar: '+err.message); }
 }
 
@@ -671,6 +773,7 @@ async function eliminar(id){
     await api('DELETE',`/api/bookings/${id}`);
     await refreshBookings();
     closeView(); renderCal();
+    updateAlerts();
   } catch(err){ alert('Error al eliminar: '+err.message); }
 }
 
@@ -935,6 +1038,181 @@ window.removeSource = async function(id){
   } catch(err){ alert('Error: '+err.message); }
 };
 
+// ═══════════════════════════════════════════
+// ALERTAS
+// ═══════════════════════════════════════════
+let _alerts = [];
+
+async function updateAlerts(){
+  try {
+    const r = await api('GET', '/api/alerts');
+    _alerts = r.alerts || [];
+    const badge = document.getElementById('alertBadge');
+    if(_alerts.length > 0){
+      badge.textContent = _alerts.length > 9 ? '9+' : _alerts.length;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  } catch{ /* servidor no disponible */ }
+}
+
+function openAlerts(){
+  const list = document.getElementById('alertList');
+  if(!_alerts.length){
+    list.innerHTML = '<div class="alert-empty">✅ Todo en orden — sin alertas activas</div>';
+  } else {
+    list.innerHTML = _alerts.map(a => {
+      const icon = a.level==='error' ? '🔴' : '⚠️';
+      return `<div class="alert-item ${a.level}">
+        <span class="alert-icon">${icon}</span>
+        <div class="alert-msg">${a.message}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('alertsOv').classList.add('on');
+}
+function closeAlerts(){ document.getElementById('alertsOv').classList.remove('on'); }
+
+// ═══════════════════════════════════════════
+// CONFLICTOS
+// ═══════════════════════════════════════════
+function getConflictPids(){
+  // Devuelve un Set de {pid+date} con celdas en conflicto
+  const result = new Set();
+  const relevant = bookings.filter(b => b.pid && b.s && b.e &&
+    b.type !== 'capacity-block' && b.type !== 'ical-override');
+  for(let i=0;i<relevant.length;i++){
+    for(let j=i+1;j<relevant.length;j++){
+      const a=relevant[i], b=relevant[j];
+      if(a.pid!==b.pid) continue;
+      if(!(a.s<=b.e && a.e>=b.s)) continue;
+      // Marcar todas las celdas en el rango de solapamiento
+      const os = a.s > b.s ? a.s : b.s;
+      const oe = a.e < b.e ? a.e : b.e;
+      let d = new Date(os+'T12:00:00Z');
+      const end = new Date(oe+'T12:00:00Z');
+      while(d<=end){
+        result.add(a.pid+'|'+d.toISOString().slice(0,10));
+        d.setUTCDate(d.getUTCDate()+1);
+      }
+    }
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════
+// PRÓXIMAS RESERVAS
+// ═══════════════════════════════════════════
+const DESTINATIONS_LIST = ['Tequila','Tapalpa','Mazamitla','Nuevo Vallarta','Guadalajara','San Pedro Tesistán'];
+let upcomingDestFilter = 'Todos';
+
+function renderUpcoming(){
+  const panel = document.getElementById('upcomingPanel');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr    = today.toISOString().slice(0,10);
+  const tomorrowStr = addDaysStr(todayStr, 1);
+  const in14Str     = addDaysStr(todayStr, 14);
+
+  // Filtrar solo reservas (no bloqueos iCal ni capacity)
+  const reservations = bookings.filter(b =>
+    (b.type === 'reservation' || b.type === 'ical-block' || b.type === 'block') &&
+    b.s && b.s >= todayStr
+  ).sort((a,b) => a.s < b.s ? -1 : 1);
+
+  const filtered = upcomingDestFilter === 'Todos'
+    ? reservations
+    : reservations.filter(b => {
+        const p = PROPS.find(p=>p.id===b.pid);
+        return p && p.dest === upcomingDestFilter;
+      });
+
+  // Contar hoy y esta semana
+  const countToday = filtered.filter(b => b.s === todayStr).length;
+  const weekEnd = addDaysStr(todayStr, 6);
+  const countWeek = filtered.filter(b => b.s >= todayStr && b.s <= weekEnd).length;
+
+  const nextReservations = filtered.slice(0, 20);
+
+  const destBtns = ['Todos', ...DESTINATIONS_LIST].map(d =>
+    `<button class="up-dest-btn${upcomingDestFilter===d?' on':''}" data-dest="${d}">${d}</button>`
+  ).join('');
+
+  const cards = nextReservations.map(bk => {
+    const prop = PROPS.find(p=>p.id===bk.pid);
+    const propName = prop ? prop.name : bk.pid;
+    const propDest = prop ? (prop.dest + (prop.group ? ' · '+prop.group : '')) : '';
+    const isToday  = bk.s === todayStr;
+    const isTmrw   = bk.s === tomorrowStr;
+    const nights   = nightCount(bk.s, bk.e);
+    const sd = bk.s.split('-'); const ed = bk.e.split('-');
+    const dayNum = parseInt(sd[2]);
+    const monthAbbr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(sd[1])-1];
+    const isIcal = bk.type === 'ical-block';
+    const platLabel = bk.platform || (isIcal ? 'iCal' : '');
+    const phoneHtml = bk.phone
+      ? `<div class="up-card-phone"><a class="up-phone-link" href="tel:${bk.phone.replace(/\s/g,'')}">📞 ${bk.phone}</a></div>`
+      : '';
+    const notesHtml = bk.notes ? `<div class="up-card-notes">📝 ${bk.notes}</div>` : '';
+    let todayBadge = '';
+    if(isToday) todayBadge = ' <span style="background:#22c55e;color:#fff;font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:800">HOY</span>';
+    if(isTmrw)  todayBadge = ' <span style="background:#0ea5e9;color:#fff;font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:800">MAÑANA</span>';
+    return `<div class="up-card${isToday?' today':isTmrw?' tomorrow':''}">
+      <div class="up-card-date">
+        <div class="ucd-day">${dayNum}</div>
+        <div class="ucd-month">${monthAbbr}</div>
+        <div class="ucd-nights">${nights}n</div>
+      </div>
+      <div class="up-card-info">
+        <div class="up-card-name">${bk.name || 'Sin nombre'}${todayBadge}</div>
+        <div class="up-card-prop">🏠 ${propName} · ${propDest}</div>
+        ${platLabel ? `<div class="up-card-plat">${platLabel}</div>` : ''}
+        <div class="up-card-dates">📅 ${fmtDate(bk.s)} → ${fmtDate(bk.e)} &nbsp;·&nbsp; ${nights} noche${nights!==1?'s':''}</div>
+        ${notesHtml}
+        ${phoneHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="up-filters">
+      <span class="up-filter-lbl">Destino:</span>
+      ${destBtns}
+    </div>
+    <div class="up-counters">
+      <div class="up-counter"><div class="uc-num">${countToday}</div><div class="uc-lbl">Check-ins hoy</div></div>
+      <div class="up-counter"><div class="uc-num">${countWeek}</div><div class="uc-lbl">Esta semana</div></div>
+      <div class="up-counter"><div class="uc-num">${filtered.length}</div><div class="uc-lbl">Total próximas</div></div>
+    </div>
+    ${nextReservations.length ? cards : `<div class="up-empty">No hay próximas reservas${upcomingDestFilter!=='Todos'?' en '+upcomingDestFilter:''}.</div>`}
+  `;
+
+  // Filtros de destino
+  panel.querySelectorAll('.up-dest-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      upcomingDestFilter = btn.dataset.dest;
+      renderUpcoming();
+    });
+  });
+}
+
+function addDaysStr(dateStr, n){
+  const d = new Date(dateStr+'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate()+n);
+  return d.toISOString().slice(0,10);
+}
+
+let activeMainTab = 'cal';
+function switchTab(tab){
+  activeMainTab = tab;
+  document.getElementById('tabCal').classList.toggle('on', tab==='cal');
+  document.getElementById('tabUpcoming').classList.toggle('on', tab==='upcoming');
+  document.getElementById('calShell').style.display    = tab==='cal'      ? '' : 'none';
+  document.getElementById('monthNav').style.display    = tab==='cal'      ? '' : 'none';
+  document.getElementById('upcomingPanel').classList.toggle('visible', tab==='upcoming');
+  if(tab==='upcoming') renderUpcoming();
+}
+
 // ── TAB EXPORTAR ─────────────────────────
 function renderExportTab(){
   const base=window.location.origin;
@@ -1152,8 +1430,10 @@ async function init(){
     if(t) t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   },200);
 
-  // Actualizar chip cada 30 s
+  // Actualizar chip y alertas cada 30 s
   setInterval(updateSyncChip, 30000);
+  setInterval(updateAlerts, 30000);
+  await updateAlerts();
 
   // Navegación
   document.getElementById('btnPrev').addEventListener('click',()=>goMonth(-1));
@@ -1200,7 +1480,7 @@ async function init(){
       const resp=await api('POST','/api/sync');
       if(resp?.lastRun) _lastSyncRun=resp.lastRun;
       if(resp?.sources) sources=resp.sources;
-      await refreshBookings(); renderCal(); await updateSyncChip();
+      await refreshBookings(); renderCal(); await updateSyncChip(); await updateAlerts();
     } catch(err){ alert('Error al sincronizar: '+err.message); }
     btn.disabled=false; btn.textContent='🔄 Sync';
   });
@@ -1334,8 +1614,18 @@ async function init(){
     });
   });
 
+  // Tabs principales
+  document.getElementById('tabCal').addEventListener('click', ()=>switchTab('cal'));
+  document.getElementById('tabUpcoming').addEventListener('click', ()=>switchTab('upcoming'));
+
+  // Alertas
+  document.getElementById('btnAlerts').addEventListener('click', openAlerts);
+  document.getElementById('alertsClose').addEventListener('click', closeAlerts);
+  document.getElementById('alertsCerrar').addEventListener('click', closeAlerts);
+  document.getElementById('alertsOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlerts();});
+
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); }
+    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); closeAlerts(); }
   });
 }
 

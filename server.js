@@ -136,15 +136,6 @@ function buildIcal(propId, allBookings, allSources) {
   const name  = PROP_NAMES[propId] || propId;
   const stamp = new Date().toISOString().replace(/[-:.]/g,'').slice(0,15) + 'Z';
 
-  // Para propIds que pertenecen a un anuncio combinado de VLP: ignorar ical-blocks de fuentes
-  // individuales. La disponibilidad del combinado la controla solo la lógica de capacidad.
-  const vlpCombSrc = (allSources || []).find(s => {
-    const ids = s.propIds && s.propIds.length ? s.propIds : [s.propId];
-    return (s.unidades || 1) >= 2 && ids.includes(propId) && VLP.pids.includes(propId);
-  });
-  const skipNonCombIcal = !!vlpCombSrc;
-  const combSrcId = vlpCombSrc ? vlpCombSrc.id : null;
-
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -158,9 +149,8 @@ function buildIcal(propId, allBookings, allSources) {
   for (const bk of allBookings.filter(b => b.pid === propId)) {
     if (!bk.s || !bk.e) continue;
     if (bk.type === 'ical-override') continue;
+    if (bk.type === 'capacity-block') continue; // los capacity-blocks son internos
     if (bk.type === 'ical-block' && overrides.some(o => bk.s >= o.s && bk.e <= o.e)) continue;
-    // Anuncio combinado VLP: omitir ical-blocks de fuentes individuales (no del propio combinado)
-    if (skipNonCombIcal && bk.type === 'ical-block' && bk.sourceId !== combSrcId) continue;
     const dtS = bk.s.replace(/-/g,'');
     const dtE = addDays(bk.e, 1).replace(/-/g,''); // DTEND exclusivo
     const sum = bk.type === 'reservation' ? esc(bk.name || 'Reserva') : 'BLOCKED';
@@ -485,6 +475,9 @@ async function _doSync() {
     else
       slog(`  ✗ ${src.propId}: ${updated.lastError}`);
   }
+  // Limpiar ical-blocks huérfanos (cuya fuente ya no existe)
+  bookings = cleanOrphans(bookings, updatedSources);
+
   // Suprimir ical-blocks cubiertos por ical-overrides manuales
   const overrides = bookings.filter(b => b.type === 'ical-override');
   if (overrides.length) {
@@ -551,6 +544,141 @@ app.post('/api/sync/debug/:id', async (req, res) => {
     blocksInDB: icalForThis,
     report,
   });
+});
+
+// ── DETECCIÓN DE CONFLICTOS ──────────────────────────────
+function findConflicts(bookings) {
+  const relevant = bookings.filter(b => b.s && b.e && b.pid &&
+    b.type !== 'capacity-block' && b.type !== 'ical-override');
+  const conflicts = [];
+  const seen = new Set();
+  for (let i = 0; i < relevant.length; i++) {
+    for (let j = i + 1; j < relevant.length; j++) {
+      const a = relevant[i], b = relevant[j];
+      if (a.pid !== b.pid) continue;
+      if (!(a.s <= b.e && a.e >= b.s)) continue;
+      const key = [a.id, b.id].sort().join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      conflicts.push({
+        pid: a.pid,
+        propName: PROP_NAMES[a.pid] || a.pid,
+        bk1: { id: a.id, type: a.type, name: a.name || a.type, platform: a.platform, s: a.s, e: a.e },
+        bk2: { id: b.id, type: b.type, name: b.name || b.type, platform: b.platform, s: b.s, e: b.e },
+        overlapStart: a.s > b.s ? a.s : b.s,
+        overlapEnd:   a.e < b.e ? a.e : b.e,
+      });
+    }
+  }
+  return conflicts;
+}
+
+// ── LIMPIEZA DE BLOQUES HUÉRFANOS ────────────────────────
+function cleanOrphans(bookings, sources) {
+  const sourceIds = new Set((sources || []).map(s => s.id));
+  const before = bookings.length;
+  // Eliminar ical-blocks cuya fuente ya no existe
+  const cleaned = bookings.filter(b => {
+    if (b.type !== 'ical-block') return true;
+    if (!b.sourceId) return true; // sin sourceId, conservar
+    return sourceIds.has(b.sourceId);
+  });
+  const removed = before - cleaned.length;
+  if (removed > 0) slog(`[Orphan cleanup] Eliminados ${removed} ical-block(s) huérfanos (fuente eliminada)`);
+  return cleaned;
+}
+
+// ── /api/ical-check ─────────────────────────────────────
+app.get('/api/ical-check', (_req, res) => {
+  const bookings = readJSON(BOOKINGS_F, []);
+  const sources  = readJSON(SOURCES_F,  []);
+  const allPids  = [...new Set(bookings.map(b => b.pid))].sort();
+
+  const report = allPids.map(pid => {
+    const dbBlocks = bookings.filter(b =>
+      b.pid === pid &&
+      b.type !== 'capacity-block' &&
+      b.type !== 'ical-override'
+    );
+    const icalText   = buildIcal(pid, bookings, sources);
+    const icalEvents = parseIcalText(icalText);
+    const byType = {};
+    for (const b of dbBlocks) byType[b.type] = (byType[b.type] || 0) + 1;
+    return {
+      propId: pid,
+      name: PROP_NAMES[pid] || pid,
+      dbTotal: dbBlocks.length,
+      icalTotal: icalEvents.length,
+      mismatch: dbBlocks.length !== icalEvents.length,
+      byType,
+    };
+  });
+
+  const mismatches = report.filter(r => r.mismatch).length;
+  res.json({ ok: mismatches === 0, mismatches, total: report.length, report });
+});
+
+// ── /api/conflicts ───────────────────────────────────────
+app.get('/api/conflicts', (_req, res) => {
+  const bookings = readJSON(BOOKINGS_F, []);
+  res.json(findConflicts(bookings));
+});
+
+// ── /api/alerts ─────────────────────────────────────────
+app.get('/api/alerts', (_req, res) => {
+  const bookings = readJSON(BOOKINGS_F, []);
+  const sources  = readJSON(SOURCES_F,  []);
+  const alerts   = [];
+
+  // 1. Errores de sincronización
+  for (const src of sources) {
+    if (src.lastStatus === 'error') {
+      alerts.push({
+        type: 'sync-error', level: 'error',
+        message: `Sync fallido: ${src.platform || src.propId} — ${src.lastError || 'error desconocido'}`,
+        sourceId: src.id,
+      });
+    } else if (src.lastStatus === 'partial') {
+      alerts.push({
+        type: 'sync-error', level: 'warning',
+        message: `Sync parcial: ${src.platform || src.propId} — algunas URLs fallaron`,
+        sourceId: src.id,
+      });
+    }
+  }
+
+  // 2. Conflictos de bloqueos duplicados
+  const conflicts = findConflicts(bookings);
+  for (const c of conflicts) {
+    alerts.push({
+      type: 'conflict', level: 'warning',
+      message: `Conflicto en ${c.propName}: "${c.bk1.name}" vs "${c.bk2.name}" (${c.overlapStart} → ${c.overlapEnd})`,
+      pid: c.pid, overlapStart: c.overlapStart, overlapEnd: c.overlapEnd,
+      bk1: c.bk1, bk2: c.bk2,
+    });
+  }
+
+  // 3. iCal con menos eventos que DB
+  const allPids = [...new Set(bookings.map(b => b.pid))];
+  for (const pid of allPids) {
+    const dbBlocks = bookings.filter(b =>
+      b.pid === pid &&
+      b.type !== 'capacity-block' &&
+      b.type !== 'ical-override'
+    );
+    if (!dbBlocks.length) continue;
+    const icalText   = buildIcal(pid, bookings, sources);
+    const icalEvents = parseIcalText(icalText);
+    if (icalEvents.length < dbBlocks.length) {
+      alerts.push({
+        type: 'ical-mismatch', level: 'warning',
+        message: `${PROP_NAMES[pid] || pid}: ${dbBlocks.length} bloques en DB pero solo ${icalEvents.length} en iCal de salida`,
+        pid, dbTotal: dbBlocks.length, icalTotal: icalEvents.length,
+      });
+    }
+  }
+
+  res.json({ count: alerts.length, alerts });
 });
 
 // ── FALLBACK ─────────────────────────────────────────────

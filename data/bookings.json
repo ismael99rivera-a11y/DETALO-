@@ -37,21 +37,5 @@
     "notes": "",
     "id": "eea98c7f16db0aad",
     "createdAt": "2026-05-23T09:25:32.785Z"
-  },
-  {
-    "pid": "tq1",
-    "type": "ical-block",
-    "name": "Airbnb Guest",
-    "phone": "",
-    "s": "2026-05-10",
-    "e": "2026-05-14",
-    "income": 0,
-    "platform": "Airbnb",
-    "notes": "Test ical-block",
-    "source": "ical",
-    "sourceId": "test-src",
-    "icalUid": "test123@airbnb.com",
-    "id": "fd5b67f135d0e34e",
-    "createdAt": "2026-05-23T22:58:48.434Z"
   }
 ]
