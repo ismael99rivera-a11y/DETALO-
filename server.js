@@ -18,8 +18,9 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 //             y monta un volumen persistente en /data desde el dashboard.
 // En local:   usa ./data automáticamente (sin configurar nada).
 const DATA_DIR   = process.env.DATA_DIR || path.join(ROOT, 'data');
-const BOOKINGS_F = path.join(DATA_DIR, 'bookings.json');
-const SOURCES_F  = path.join(DATA_DIR, 'ical-sources.json');
+const BOOKINGS_F   = path.join(DATA_DIR, 'bookings.json');
+const SOURCES_F    = path.join(DATA_DIR, 'ical-sources.json');
+const PROP_NOTES_F = path.join(DATA_DIR, 'prop-notes.json');
 
 for (const d of [DATA_DIR, PUBLIC_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
@@ -544,6 +545,19 @@ app.post('/api/sync/debug/:id', async (req, res) => {
     blocksInDB: icalForThis,
     report,
   });
+});
+
+// ── PROP NOTES ───────────────────────────────────────────
+app.get('/api/prop-notes', (_req, res) => {
+  res.json(readJSON(PROP_NOTES_F, {}));
+});
+app.put('/api/prop-notes/:propId', (req, res) => {
+  const notes = readJSON(PROP_NOTES_F, {});
+  const text  = (req.body.text || '').trim();
+  if (text) notes[req.params.propId] = text;
+  else      delete notes[req.params.propId];
+  writeJSON(PROP_NOTES_F, notes);
+  res.json({ ok: true });
 });
 
 // ── DETECCIÓN DE CONFLICTOS ──────────────────────────────

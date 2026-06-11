@@ -306,6 +306,154 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .up-phone-link{display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #86efac;color:#15803d;text-decoration:none;padding:5px 12px;border-radius:16px;font-size:.76rem;font-weight:700;transition:all .15s}
 .up-phone-link:hover{background:#dcfce7;border-color:#4ade80}
 .up-empty{text-align:center;color:#94a3b8;padding:40px;font-size:.9rem}
+
+/* ══════════════════════════════════════════
+   MEJORA 1 — BUSCADOR RÁPIDO
+══════════════════════════════════════════ */
+.search-wrap{position:relative;display:flex;align-items:center}
+.search-input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;padding:5px 10px 5px 30px;border-radius:7px;font-size:.78rem;width:150px;transition:all .2s;outline:none}
+.search-input::placeholder{color:#64748b}
+.search-input:focus{background:rgba(255,255,255,.18);border-color:rgba(14,165,233,.6);width:200px}
+.search-icon{position:absolute;left:8px;font-size:.8rem;pointer-events:none;color:#64748b}
+.prop-name.search-highlight{background:#fef9c3!important;outline:2px solid #eab308;transition:background .3s}
+
+/* ══════════════════════════════════════════
+   MEJORA 2 — VISTA COMPACTA
+══════════════════════════════════════════ */
+.btn-compact{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#94a3b8;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn-compact:hover{background:rgba(255,255,255,.18);color:#e2e8f0}
+.btn-compact.on{background:rgba(168,85,247,.25);border-color:rgba(168,85,247,.5);color:#c084fc}
+/* Compact rows */
+.cal-wrap.compact .prop-row{height:18px}
+.cal-wrap.compact .prop-name{height:18px;font-size:.62rem;padding:0 4px 0 8px}
+.cal-wrap.compact .dc{height:18px}
+.cal-wrap.compact .dc.today-col::after{display:none}
+.cal-wrap.compact .bk-label{display:none}
+.cal-wrap.compact .note-btn{display:none}
+.cal-wrap.compact .day-th{height:28px}
+.cal-wrap.compact .dest-hdr .dest-lbl{height:18px}
+.cal-wrap.compact .grp-hdr .grp-lbl{height:15px;font-size:.58rem}
+.cal-wrap.compact .grp-sep{height:2px}
+
+/* ══════════════════════════════════════════
+   MEJORA 3 — NOTAS POR PROPIEDAD
+══════════════════════════════════════════ */
+.note-btn{background:none;border:none;cursor:pointer;font-size:.8rem;padding:0 3px;opacity:.35;flex-shrink:0;line-height:1;transition:opacity .15s}
+.note-btn:hover{opacity:.8}
+.note-btn.has-notes{opacity:1;filter:none}
+.prop-name{display:flex!important;align-items:center;gap:3px}
+.prop-name-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notes-box{width:480px}
+.notes-prop-lbl{font-size:.78rem;color:#64748b;margin-bottom:10px}
+.notes-textarea{width:100%;min-height:120px;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:.88rem;color:#1e293b;resize:vertical;font-family:inherit;line-height:1.5}
+.notes-textarea:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)}
+
+/* ══════════════════════════════════════════
+   MEJORA 4 — ESTADÍSTICAS POR PROPIEDAD
+══════════════════════════════════════════ */
+.stats-panel{position:fixed;z-index:500;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.22);padding:16px 18px;width:260px;animation:pop .15s ease}
+.stats-panel-title{font-size:.88rem;font-weight:800;color:#0f172a;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:.8rem}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{color:#64748b}
+.stat-val{font-weight:700;color:#0f172a}
+.stat-val.green{color:#16a34a}
+.stat-val.blue{color:#0369a1}
+.stat-occ-bar{height:6px;border-radius:3px;background:#e2e8f0;margin-top:8px;overflow:hidden}
+.stat-occ-fill{height:100%;background:#0ea5e9;border-radius:3px;transition:width .4s}
+
+/* ══════════════════════════════════════════
+   MEJORA 5 — MODO OSCURO
+══════════════════════════════════════════ */
+.btn-dark{background:none;border:none;cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:6px;color:#94a3b8;transition:all .15s}
+.btn-dark:hover{background:rgba(255,255,255,.12);color:#e2e8f0}
+html.dark body{background:#0f172a;color:#e2e8f0}
+html.dark .app-hdr{background:#020617;box-shadow:0 2px 8px rgba(0,0,0,.8)}
+html.dark .cal-shell{background:#0f172a}
+html.dark .cal-shell::-webkit-scrollbar-track{background:#1e293b}
+html.dark .cal-shell::-webkit-scrollbar-thumb{background:#334155}
+html.dark .cal-wrap{background:#0f172a}
+html.dark .day-hdr-row{background:#1e293b;border-bottom-color:#334155}
+html.dark .corner{background:#1e293b;border-right-color:#334155}
+html.dark .day-th{color:#64748b;border-right-color:#1e293b}
+html.dark .day-th.wknd{background:#1a2336}
+html.dark .day-th.today-col{background:#0c2340}
+html.dark .prop-row{border-bottom-color:#1e293b}
+html.dark .prop-name{background:#131e2e;color:#94a3b8;border-right-color:#334155}
+html.dark .prop-row:hover .prop-name{background:#1e3a5f}
+html.dark .dc{background:#0f172a;border-right-color:#1e293b}
+html.dark .dc:hover{background:#1e293b}
+html.dark .dc.wknd{background:#131e2e}
+html.dark .dc.today-col{background:#0c2340}
+html.dark .grp-sep{background:#1e293b;border-bottom-color:#334155}
+html.dark .mbox{background:#1e293b;color:#e2e8f0}
+html.dark .mhdr{border-bottom-color:#334155}
+html.dark .mtitle{color:#e2e8f0}
+html.dark .mbody{color:#e2e8f0}
+html.dark .mfoot{border-top-color:#334155}
+html.dark .mclose{color:#64748b}.html.dark .mclose:hover{color:#e2e8f0;background:#334155}
+html.dark .fg label{color:#94a3b8}
+html.dark .fg input,html.dark .fg select,html.dark .fg textarea{background:#0f172a;border-color:#334155;color:#e2e8f0}
+html.dark .btn-sec{background:#334155;color:#94a3b8}
+html.dark .btn-sec:hover{background:#475569}
+html.dark .dgrid .val{color:#e2e8f0}
+html.dark .di label{color:#64748b}
+html.dark .stat-row{border-bottom-color:#334155}
+html.dark .stats-panel{background:#1e293b;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+html.dark .stats-panel-title{color:#e2e8f0;border-bottom-color:#334155}
+html.dark .stat-lbl{color:#64748b}
+html.dark .stat-val{color:#e2e8f0}
+html.dark .stat-occ-bar{background:#334155}
+html.dark .up-card{background:#1e293b;border-color:#334155}
+html.dark .up-card.today{background:#14291a;border-color:#22c55e}
+html.dark .up-card.tomorrow{background:#0c2340;border-color:#0ea5e9}
+html.dark .up-card-date{background:#0f172a}
+html.dark .up-card-name{color:#e2e8f0}
+html.dark .up-card-prop{color:#64748b}
+html.dark .up-card-dates{color:#94a3b8}
+html.dark .up-counter{background:#1e293b;border-color:#334155}
+html.dark .up-counter .uc-num{color:#e2e8f0}
+html.dark #upcomingPanel{background:#0f172a}
+html.dark #incomePanel{background:#0f172a}
+html.dark .inc-card{background:#1e293b;border-color:#334155}
+html.dark .inc-card-title{color:#94a3b8}
+html.dark .inc-card-value{color:#e2e8f0}
+html.dark .inc-bar-row{color:#94a3b8}
+html.dark .inc-bar-bg{background:#334155}
+html.dark .inc-month-label{color:#64748b}
+html.dark .notes-textarea{background:#0f172a;border-color:#334155;color:#e2e8f0}
+html.dark .src-prop-hdr{background:#1e3a5f}
+html.dark .alert-item.error{background:#2d0f0f;border-color:#7f1d1d}
+html.dark .alert-item.warning{background:#2d2200;border-color:#78350f}
+
+/* ══════════════════════════════════════════
+   MEJORA 6 — DASHBOARD DE INGRESOS
+══════════════════════════════════════════ */
+#incomePanel{flex:1;overflow-y:auto;padding:16px 20px;display:none;flex-direction:column;gap:14px;background:#f1f5f9}
+#incomePanel.visible{display:flex}
+.inc-top-row{display:flex;gap:12px;flex-wrap:wrap}
+.inc-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;flex:1;min-width:160px}
+.inc-card-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:6px}
+.inc-card-value{font-size:1.7rem;font-weight:800;color:#0f172a;line-height:1}
+.inc-card-sub{font-size:.72rem;color:#64748b;margin-top:4px}
+.inc-card-delta{font-size:.78rem;font-weight:700;margin-top:4px}
+.inc-card-delta.up{color:#16a34a}
+.inc-card-delta.down{color:#dc2626}
+.inc-section{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px}
+.inc-section-title{font-size:.78rem;font-weight:800;color:#0f172a;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em}
+.inc-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.78rem;color:#475569}
+.inc-bar-lbl{width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inc-bar-bg{flex:1;height:18px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.inc-bar-fill{height:100%;border-radius:4px;transition:width .5s;min-width:4px}
+.inc-bar-val{width:80px;flex-shrink:0;text-align:right;font-weight:700;color:#0f172a;font-size:.76rem}
+.inc-months-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-bottom:4px;margin-top:8px}
+.inc-month-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.inc-month-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .5s;cursor:default}
+.inc-month-bar.current-mo{background:#0ea5e9}
+.inc-month-bar.prev-mo{background:#93c5fd}
+.inc-month-label{font-size:.62rem;color:#94a3b8;text-align:center;white-space:nowrap}
+.inc-month-val{font-size:.6rem;color:#64748b;text-align:center;white-space:nowrap}
+.inc-empty{text-align:center;color:#94a3b8;padding:30px;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -319,17 +467,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="leg-item"><div class="leg-dot cap"></div>Capacidad</div>
       <div class="leg-item"><div class="leg-dot a"></div>Disponible</div>
     </div>
+    <!-- Buscador rápido -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar propiedad…" autocomplete="off">
+    </div>
+    <!-- Tabs principales -->
     <div class="main-tabs">
       <button class="main-tab on" id="tabCal">📅 Calendario</button>
-      <button class="main-tab" id="tabUpcoming">🔑 Próximas Reservas</button>
+      <button class="main-tab" id="tabUpcoming">🔑 Próximas</button>
+      <button class="main-tab" id="tabIncome">💰 Ingresos</button>
     </div>
     <div id="syncChip" class="sync-chip idle" title="Estado de sincronización iCal">⏸ Sin fuentes</div>
     <button class="btn-sync" id="btnSyncHdr" title="Sincronizar fuentes iCal ahora">🔄 Sync</button>
+    <!-- Vista compacta -->
+    <button class="btn-compact" id="btnCompact" title="Vista compacta / normal">⊟ Compacta</button>
+    <!-- Modo oscuro -->
+    <button class="btn-dark" id="btnDark" title="Modo oscuro">🌙</button>
+    <!-- Alertas -->
     <button class="alert-btn" id="btnAlerts" title="Ver alertas del sistema">
       🔔
       <span class="alert-badge hidden" id="alertBadge">0</span>
     </button>
-    <button class="btn-settings" id="btnSettings">⚙ Sincronización</button>
+    <button class="btn-settings" id="btnSettings">⚙ Sync</button>
     <div class="month-nav" id="monthNav">
       <button class="nav-btn" id="btnPrev">&#8249;</button>
       <div class="month-lbl" id="monthLbl"></div>
@@ -345,6 +505,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div id="upcomingPanel"></div>
+  <div id="incomePanel"></div>
+  <!-- Stats floating panel (se posiciona dinámicamente) -->
+  <div id="statsPanel" class="stats-panel" style="display:none"></div>
 </div>
 
 <!-- ═══ MODAL VER RESERVA ═══ -->
@@ -411,6 +574,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="mfoot">
       <button class="btn btn-sec" id="btnFormCerrar">Cancelar</button>
       <button class="btn btn-pri" id="btnGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL NOTAS PROPIEDAD ═══ -->
+<div class="overlay" id="notesOv">
+  <div class="mbox notes-box">
+    <div class="mhdr">
+      <div class="mtitle" id="notesTitle">📝 Notas</div>
+      <button class="mclose" id="notesClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <div class="notes-prop-lbl" id="notesPropLbl"></div>
+      <textarea class="notes-textarea" id="notesText" placeholder="Escribe notas sobre esta propiedad: contraseñas WiFi, instrucciones de llegada, contactos, características especiales…"></textarea>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="notesCerrar">Cancelar</button>
+      <button class="btn btn-pri" id="notesGuardar">💾 Guardar notas</button>
     </div>
   </div>
 </div>
@@ -526,10 +707,15 @@ let curY, curM;
 let activeId  = null;
 let formType  = 'reservation';
 let settingsTab = 'import';
-let _lastSyncRun = null;   // para detectar syncs automáticos y refrescar el calendario
+let _lastSyncRun = null;
 // Drag-to-select
 let drag = { on:false, startDs:null, curDs:null, startPid:null, curPid:null, moved:false };
 let suppressClick = false;
+// Nuevas características
+let propNotes   = {};          // { propId: 'texto' }
+let compactMode = false;
+let _statsCloseTimer = null;
+let activeNotesPid = null;
 
 // ═══════════════════════════════════════════
 // UTILIDADES
@@ -614,7 +800,12 @@ function renderCal(){
         curGrp=prop.group;
         if(prop.group) h+=`<div class="grp-hdr"><div class="grp-lbl">${prop.group}</div><div class="grp-fill"></div></div>`;
       }
-      h+=`<div class="prop-row"><div class="prop-name" title="${prop.name}">${prop.name}</div>`;
+      const hasNote = !!propNotes[prop.id];
+      h+=`<div class="prop-row">
+        <div class="prop-name" title="${prop.name}" data-pid="${prop.id}" data-action="stats">
+          <span class="prop-name-txt">${prop.name}</span>
+          <button class="note-btn${hasNote?' has-notes':''}" data-pid="${prop.id}" data-action="notes" title="${hasNote?'Ver/editar notas':'Agregar notas'}">${hasNote?'📝':'📄'}</button>
+        </div>`;
       for(let d=1;d<=total;d++){
         const bk=bkForCell(prop.id,curY,curM,d);
         const wk=isWeekend(curY,curM,d),tod=isToday(curY,curM,d);
@@ -665,6 +856,20 @@ function renderCal(){
       const bkId=el.dataset.bk;
       if(bkId) openView(bkId);
       else     openForm(el.dataset.pid, el.dataset.ds);
+    });
+  });
+  // Notas: click en botón 📝
+  document.querySelectorAll('.note-btn').forEach(btn=>{
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openNotesModal(btn.dataset.pid);
+    });
+  });
+  // Estadísticas: click en nombre de propiedad (no en botón notas)
+  document.querySelectorAll('.prop-name[data-action="stats"]').forEach(el=>{
+    el.addEventListener('click', e => {
+      if(e.target.closest('.note-btn')) return;
+      openStatsPanel(el.dataset.pid, el);
     });
   });
 }
@@ -1207,10 +1412,299 @@ function switchTab(tab){
   activeMainTab = tab;
   document.getElementById('tabCal').classList.toggle('on', tab==='cal');
   document.getElementById('tabUpcoming').classList.toggle('on', tab==='upcoming');
-  document.getElementById('calShell').style.display    = tab==='cal'      ? '' : 'none';
-  document.getElementById('monthNav').style.display    = tab==='cal'      ? '' : 'none';
+  document.getElementById('tabIncome').classList.toggle('on', tab==='income');
+  document.getElementById('calShell').style.display    = tab==='cal' ? '' : 'none';
+  document.getElementById('monthNav').style.display    = tab==='cal' ? '' : 'none';
+  document.getElementById('btnCompact').style.display  = tab==='cal' ? '' : 'none';
   document.getElementById('upcomingPanel').classList.toggle('visible', tab==='upcoming');
+  document.getElementById('incomePanel').classList.toggle('visible', tab==='income');
   if(tab==='upcoming') renderUpcoming();
+  if(tab==='income')   renderIncome();
+}
+
+// ══════════════════════════════════════════════════════════
+// MEJORA 1 — BUSCADOR RÁPIDO
+// ══════════════════════════════════════════════════════════
+function searchProps(query){
+  const q = query.trim().toLowerCase();
+  // Limpiar highlights anteriores
+  document.querySelectorAll('.prop-name.search-highlight').forEach(el=>el.classList.remove('search-highlight'));
+  if(!q) return;
+  const matches = PROPS.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    (p.group||'').toLowerCase().includes(q) ||
+    p.dest.toLowerCase().includes(q)
+  );
+  if(!matches.length) return;
+  // Highlight all matches
+  matches.forEach(p=>{
+    document.querySelectorAll(`.prop-name[data-pid="${p.id}"]`).forEach(el=>{
+      el.classList.add('search-highlight');
+    });
+  });
+  // Scroll a la primera coincidencia
+  const first = document.querySelector(`.prop-name[data-pid="${matches[0].id}"]`);
+  if(first){
+    const shell = document.getElementById('calShell');
+    shell.scrollTo({ top: first.offsetTop - 80, behavior:'smooth' });
+    // Quitar highlight después de 2s
+    setTimeout(()=>{
+      document.querySelectorAll('.prop-name.search-highlight').forEach(el=>el.classList.remove('search-highlight'));
+    }, 2000);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MEJORA 2 — VISTA COMPACTA
+// ══════════════════════════════════════════════════════════
+function toggleCompact(){
+  compactMode = !compactMode;
+  const wrap = document.getElementById('calWrap');
+  const btn  = document.getElementById('btnCompact');
+  wrap.classList.toggle('compact', compactMode);
+  btn.classList.toggle('on', compactMode);
+  btn.textContent = compactMode ? '⊞ Normal' : '⊟ Compacta';
+}
+
+// ══════════════════════════════════════════════════════════
+// MEJORA 3 — NOTAS POR PROPIEDAD
+// ══════════════════════════════════════════════════════════
+async function loadPropNotes(){
+  try { propNotes = await api('GET','/api/prop-notes'); }
+  catch{ propNotes={}; }
+}
+
+function openNotesModal(pid){
+  activeNotesPid = pid;
+  const prop = PROPS.find(p=>p.id===pid);
+  document.getElementById('notesTitle').textContent = `📝 Notas — ${prop?prop.name:pid}`;
+  document.getElementById('notesPropLbl').textContent =
+    prop ? `${prop.dest}${prop.group?' · '+prop.group:''}` : '';
+  document.getElementById('notesText').value = propNotes[pid] || '';
+  document.getElementById('notesOv').classList.add('on');
+  setTimeout(()=>document.getElementById('notesText').focus(), 120);
+}
+function closeNotesModal(){ document.getElementById('notesOv').classList.remove('on'); activeNotesPid=null; }
+
+async function saveNotes(){
+  if(!activeNotesPid) return;
+  const text = document.getElementById('notesText').value.trim();
+  try {
+    await api('PUT', `/api/prop-notes/${activeNotesPid}`, { text });
+    propNotes[activeNotesPid] = text || undefined;
+    if(!text) delete propNotes[activeNotesPid];
+    closeNotesModal();
+    renderCal(); // re-render para actualizar icono 📝
+  } catch(err){ alert('Error al guardar notas: '+err.message); }
+}
+
+// ══════════════════════════════════════════════════════════
+// MEJORA 4 — ESTADÍSTICAS POR PROPIEDAD
+// ══════════════════════════════════════════════════════════
+function openStatsPanel(pid, anchorEl){
+  clearTimeout(_statsCloseTimer);
+  const panel = document.getElementById('statsPanel');
+  const prop  = PROPS.find(p=>p.id===pid);
+  if(!prop) return;
+
+  const today = new Date();
+  const y = today.getFullYear(), m = today.getMonth();
+  const daysInMo = new Date(y,m+1,0).getDate();
+  const moStart  = `${y}-${pad2(m+1)}-01`;
+  const moEnd    = `${y}-${pad2(m+1)}-${pad2(daysInMo)}`;
+
+  // Bloqueos del mes actual para esta propiedad
+  const moBookings = bookings.filter(b =>
+    b.pid===pid && b.type!=='capacity-block' && b.type!=='ical-override' &&
+    b.s<=moEnd && b.e>=moStart
+  );
+
+  // Noches ocupadas este mes
+  let nightsOcc = 0;
+  const counted = new Set();
+  for(const bk of moBookings){
+    let d = new Date(Math.max(new Date(bk.s),new Date(moStart)));
+    const eDate = new Date(Math.min(new Date(bk.e),new Date(moEnd)));
+    while(d<=eDate){ const ds=d.toISOString().slice(0,10); if(!counted.has(ds)){counted.add(ds);nightsOcc++;} d.setDate(d.getDate()+1); }
+  }
+  const pct = Math.round(nightsOcc/daysInMo*100);
+
+  // Próxima reserva
+  const todayStr = today.toISOString().slice(0,10);
+  const next = bookings.filter(b=>b.pid===pid&&b.type==='reservation'&&b.s>=todayStr)
+    .sort((a,b)=>a.s<b.s?-1:1)[0];
+
+  const totalRes = bookings.filter(b=>b.pid===pid&&b.type==='reservation').length;
+  const totalBlk = bookings.filter(b=>b.pid===pid&&b.type==='ical-block').length;
+
+  panel.innerHTML = `
+    <div class="stats-panel-title">📊 ${prop.name}</div>
+    <div class="stat-occ-bar"><div class="stat-occ-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:.68rem;color:#64748b;margin:4px 0 10px">${MONTH_NAMES[m]} — ${pct}% ocupado</div>
+    <div class="stat-row"><span class="stat-lbl">Noches vendidas</span><span class="stat-val green">${nightsOcc} / ${daysInMo}</span></div>
+    <div class="stat-row"><span class="stat-lbl">Reservas activas</span><span class="stat-val blue">${totalRes}</span></div>
+    <div class="stat-row"><span class="stat-lbl">Bloqueos iCal</span><span class="stat-val">${totalBlk}</span></div>
+    <div class="stat-row"><span class="stat-lbl">Próxima reserva</span><span class="stat-val">${next?fmtDate(next.s):'—'}</span></div>
+    ${next?`<div class="stat-row"><span class="stat-lbl">Huésped</span><span class="stat-val" style="font-size:.72rem;max-width:130px;overflow:hidden;text-overflow:ellipsis">${next.name||'—'}</span></div>`:''}
+  `;
+
+  // Posicionar junto al elemento
+  const rect = anchorEl.getBoundingClientRect();
+  panel.style.display='block';
+  const pw=260, ph=220;
+  let top  = rect.bottom + 4;
+  let left = rect.left;
+  if(left+pw > window.innerWidth-10) left = window.innerWidth-pw-10;
+  if(top+ph > window.innerHeight-10) top = rect.top-ph-4;
+  panel.style.top  = top+'px';
+  panel.style.left = left+'px';
+
+  // Cerrar al hacer click fuera
+  const closePanel = e=>{
+    if(!panel.contains(e.target)&&!anchorEl.contains(e.target)){
+      panel.style.display='none';
+      document.removeEventListener('click',closePanel,true);
+    }
+  };
+  setTimeout(()=>document.addEventListener('click',closePanel,true),50);
+}
+
+// ══════════════════════════════════════════════════════════
+// MEJORA 5 — MODO OSCURO
+// ══════════════════════════════════════════════════════════
+function initDarkMode(){
+  const saved = localStorage.getItem('detalo_dark');
+  if(saved==='1') applyDark(true);
+}
+function toggleDark(){
+  const isDark = document.documentElement.classList.contains('dark');
+  applyDark(!isDark);
+}
+function applyDark(on){
+  document.documentElement.classList.toggle('dark',on);
+  document.getElementById('btnDark').textContent = on ? '☀️' : '🌙';
+  localStorage.setItem('detalo_dark', on?'1':'0');
+}
+
+// ══════════════════════════════════════════════════════════
+// MEJORA 6 — DASHBOARD DE INGRESOS
+// ══════════════════════════════════════════════════════════
+function renderIncome(){
+  const panel = document.getElementById('incomePanel');
+  const today = new Date();
+  const y=today.getFullYear(), m=today.getMonth();
+
+  // Genera el rango YYYY-MM-01 → YYYY-MM-DD para un mes relativo a hoy
+  function moRange(offsetMonths){
+    let mm=m+offsetMonths, yy=y;
+    while(mm<0){mm+=12;yy--;}
+    while(mm>11){mm-=12;yy++;}
+    const days=new Date(yy,mm+1,0).getDate();
+    return { start:`${yy}-${pad2(mm+1)}-01`, end:`${yy}-${pad2(mm+1)}-${pad2(days)}`, label:MONTH_NAMES[mm].slice(0,3)+' '+yy };
+  }
+
+  // Solo reservas con ingreso > 0
+  const resWithIncome = bookings.filter(b=>b.type==='reservation'&&(b.income||0)>0);
+
+  function incomeForRange({start,end}){
+    return resWithIncome.filter(b=>b.s>=start&&b.s<=end).reduce((s,b)=>s+(b.income||0),0);
+  }
+
+  const curMo  = moRange(0);
+  const prevMo = moRange(-1);
+  const curInc  = incomeForRange(curMo);
+  const prevInc = incomeForRange(prevMo);
+  const delta   = prevInc>0 ? Math.round((curInc-prevInc)/prevInc*100) : null;
+
+  // Desglose por destino (mes actual)
+  const curBookings = resWithIncome.filter(b=>b.s>=curMo.start&&b.s<=curMo.end);
+  const byDest = {};
+  for(const b of curBookings){
+    const p=PROPS.find(x=>x.id===b.pid);
+    const dest=p?p.dest:'Otro';
+    byDest[dest]=(byDest[dest]||0)+(b.income||0);
+  }
+  const destEntries=Object.entries(byDest).sort((a,b)=>b[1]-a[1]);
+  const maxDest=destEntries[0]?.[1]||1;
+
+  // Desglose por plataforma (mes actual)
+  const byPlat = {};
+  for(const b of curBookings){
+    const plat=b.platform||'Sin plataforma';
+    byPlat[plat]=(byPlat[plat]||0)+(b.income||0);
+  }
+  const platEntries=Object.entries(byPlat).sort((a,b)=>b[1]-a[1]);
+  const maxPlat=platEntries[0]?.[1]||1;
+
+  // Últimos 6 meses
+  const months6=[];
+  for(let i=-5;i<=0;i++) months6.push({ ...moRange(i), inc:incomeForRange(moRange(i)), isCurrent:i===0 });
+  const maxMo=Math.max(...months6.map(m=>m.inc),1);
+
+  const BAR_COLORS=['#0ea5e9','#22c55e','#f97316','#a855f7','#f59e0b','#ef4444','#06b6d4','#84cc16'];
+
+  const deltaHtml = delta!==null
+    ? `<div class="inc-card-delta ${delta>=0?'up':'down'}">${delta>=0?'▲':'▼'} ${Math.abs(delta)}% vs ${prevMo.label}</div>`
+    : `<div class="inc-card-sub">Sin datos del mes anterior</div>`;
+
+  panel.innerHTML = `
+    <div class="inc-top-row">
+      <div class="inc-card">
+        <div class="inc-card-title">Ingresos ${curMo.label.split(' ')[0]}</div>
+        <div class="inc-card-value">${fmtMoney(curInc)}</div>
+        ${deltaHtml}
+      </div>
+      <div class="inc-card">
+        <div class="inc-card-title">Mes anterior (${prevMo.label})</div>
+        <div class="inc-card-value">${fmtMoney(prevInc)}</div>
+        <div class="inc-card-sub">${resWithIncome.filter(b=>b.s>=prevMo.start&&b.s<=prevMo.end).length} reservas</div>
+      </div>
+      <div class="inc-card">
+        <div class="inc-card-title">Reservas con ingreso</div>
+        <div class="inc-card-value">${curBookings.length}</div>
+        <div class="inc-card-sub">en ${curMo.label.split(' ')[0]}</div>
+      </div>
+    </div>
+
+    <!-- Gráfica 6 meses -->
+    <div class="inc-section">
+      <div class="inc-section-title">📊 Últimos 6 meses</div>
+      <div class="inc-months-chart">
+        ${months6.map(mo=>{
+          const barPct = Math.round(mo.inc/maxMo*100);
+          return `<div class="inc-month-col">
+            <div class="inc-month-val">${mo.inc>0?fmtMoney(mo.inc).replace('$','').replace(',000','k').slice(0,6):''}</div>
+            <div class="inc-month-bar${mo.isCurrent?' current-mo':' prev-mo'}" style="height:${barPct}%;flex:unset" title="${mo.label}: ${fmtMoney(mo.inc)}"></div>
+            <div class="inc-month-label">${mo.label.split(' ')[0]}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Desglose por destino -->
+    <div class="inc-section">
+      <div class="inc-section-title">📍 Por destino</div>
+      ${destEntries.length?destEntries.map(([dest,inc],i)=>`
+        <div class="inc-bar-row">
+          <div class="inc-bar-lbl">${dest}</div>
+          <div class="inc-bar-bg"><div class="inc-bar-fill" style="width:${Math.round(inc/maxDest*100)}%;background:${BAR_COLORS[i%BAR_COLORS.length]}"></div></div>
+          <div class="inc-bar-val">${fmtMoney(inc)}</div>
+        </div>`).join('')
+      :`<div class="inc-empty">Sin reservas con ingreso este mes</div>`}
+    </div>
+
+    <!-- Desglose por plataforma -->
+    <div class="inc-section">
+      <div class="inc-section-title">🌐 Por plataforma</div>
+      ${platEntries.length?platEntries.map(([plat,inc],i)=>`
+        <div class="inc-bar-row">
+          <div class="inc-bar-lbl">${plat}</div>
+          <div class="inc-bar-bg"><div class="inc-bar-fill" style="width:${Math.round(inc/maxPlat*100)}%;background:${BAR_COLORS[i%BAR_COLORS.length]}"></div></div>
+          <div class="inc-bar-val">${fmtMoney(inc)}</div>
+        </div>`).join('')
+      :`<div class="inc-empty">Sin reservas con ingreso este mes</div>`}
+    </div>
+  `;
 }
 
 // ── TAB EXPORTAR ─────────────────────────
@@ -1419,9 +1913,11 @@ function goHoy(){
 async function init(){
   const n=new Date(); curY=n.getFullYear(); curM=n.getMonth();
   updateLabel();
+  initDarkMode();
 
   try { await refreshBookings(); }
   catch(e){ console.error('Error cargando reservas:', e); bookings=[]; }
+  await loadPropNotes();
   renderCal();
   await updateSyncChip();
 
@@ -1617,6 +2113,7 @@ async function init(){
   // Tabs principales
   document.getElementById('tabCal').addEventListener('click', ()=>switchTab('cal'));
   document.getElementById('tabUpcoming').addEventListener('click', ()=>switchTab('upcoming'));
+  document.getElementById('tabIncome').addEventListener('click', ()=>switchTab('income'));
 
   // Alertas
   document.getElementById('btnAlerts').addEventListener('click', openAlerts);
@@ -1624,8 +2121,32 @@ async function init(){
   document.getElementById('alertsCerrar').addEventListener('click', closeAlerts);
   document.getElementById('alertsOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlerts();});
 
+  // Notas propiedad
+  document.getElementById('notesClose').addEventListener('click', closeNotesModal);
+  document.getElementById('notesCerrar').addEventListener('click', closeNotesModal);
+  document.getElementById('notesGuardar').addEventListener('click', saveNotes);
+  document.getElementById('notesOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNotesModal();});
+
+  // Vista compacta
+  document.getElementById('btnCompact').addEventListener('click', toggleCompact);
+
+  // Modo oscuro
+  document.getElementById('btnDark').addEventListener('click', toggleDark);
+
+  // Buscador
+  const searchEl = document.getElementById('searchInput');
+  let searchTimer;
+  searchEl.addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(()=>searchProps(searchEl.value), 250);
+  });
+  searchEl.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ searchEl.value=''; searchProps(''); e.stopPropagation(); }
+    if(e.key==='Enter') searchProps(searchEl.value);
+  });
+
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); closeAlerts(); }
+    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); closeAlerts(); closeNotesModal(); document.getElementById('statsPanel').style.display='none'; }
   });
 }
 
