@@ -540,6 +540,20 @@ html.dark .prices-tbl input[type=number]{background:#0f172a;border-color:#334155
 html.dark .prices-tbl input[type=number]:disabled{background:#1e293b;color:#475569}
 
 /* ══════════════════════════════════════════
+   ENCABEZADOS FIJOS (sticky) — compat. iOS Safari
+   Safari/iOS requiere el prefijo -webkit-sticky; sin él los
+   encabezados no se quedan fijos en iPad/iPhone.
+══════════════════════════════════════════ */
+.day-hdr-row{position:-webkit-sticky;position:sticky}
+.corner     {position:-webkit-sticky;position:sticky}
+.dest-lbl   {position:-webkit-sticky;position:sticky}
+.grp-lbl    {position:-webkit-sticky;position:sticky}
+.prop-name  {position:-webkit-sticky;position:sticky}
+/* En iOS el scroll por inercia a veces "despega" los sticky:
+   forzar aceleración por GPU del contenedor lo estabiliza. */
+.cal-shell{-webkit-overflow-scrolling:touch}
+
+/* ══════════════════════════════════════════
    MEJORA 2 — RESPONSIVO (iPhone / iPad)
 ══════════════════════════════════════════ */
 /* Tablet: ocultar leyenda para liberar espacio */
