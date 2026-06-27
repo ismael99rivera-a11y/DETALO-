@@ -53,7 +53,16 @@
       "Bash(curl -s -X PUT http://localhost:3000/api/prop-prices -H \"Content-Type: application/json\" -d '{}')",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>console.log\\(JSON.parse\\(d\\).length+' bookings'\\)\\)\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(node C:/Users/detal/AppData/Local/Temp/claude/C--Users-detal-Desktop-DETALO/94cb1802-9dac-4439-a6e3-4decd24e721b/scratchpad/icalserver.js C:/Users/detal/AppData/Local/Temp/claude/C--Users-detal-Desktop-DETALO/94cb1802-9dac-4439-a6e3-4decd24e721b/scratchpad/test.ics)",
+      "Bash(curl -s -X POST http://localhost:3000/api/ical-sources -H \"Content-Type: application/json\" -d '{\"propId\":\"tq5\",\"propIds\":[\"tq5\"],\"unidades\":1,\"platform\":\"Expedia\",\"url\":\"http://localhost:4010/test.ics\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/sync)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\).filter\\(x=>x.pid==='tq5'\\);b.forEach\\(x=>{const n=x.type==='ical-block'?Math.round\\(\\(new Date\\(x.e\\)-new Date\\(x.s\\)\\)/864e5\\)+1:Math.round\\(\\(new Date\\(x.e\\)-new Date\\(x.s\\)\\)/864e5\\);console.log\\(x.icalUid,'s='+x.s,'e='+x.e,'noches='+n\\);}\\);}\\)\")",
+      "Bash(curl -s http://localhost:3000/api/conflicts)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const c=JSON.parse\\(d\\).filter\\(x=>x.pid==='tq6'\\);console.log\\(c.length+' conflicto\\(s\\) en tq6'\\);}\\)\")",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/ical-sources/62d7522d5891e166)",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/2e939b9afdb911c1)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const a=JSON.parse\\(d\\);console.log\\(a.length+' bookings:',a.map\\(x=>x.pid+'/'+x.type\\).join\\(', '\\)\\);}\\)\")"
     ]
   }
 }
