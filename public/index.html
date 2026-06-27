@@ -124,6 +124,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dc.capblk.bk-end{border-right-color:var(--cap-bdr)}
 .dc.freebk.bk-end{border-right-color:var(--free-bdr)}
 
+/* ── DÍA DE SALIDA (checkout): solo mitad izquierda coloreada ── */
+/* El huésped se va ese día: mañana ocupada (mitad izq.), tarde/noche libre (mitad der.) */
+.dc.checkout-half{position:relative;background:#fff}
+.dc.checkout-half.wknd{background:#fafafe}
+.dc.checkout-half.today-col{background:#f0f9ff}
+.dc.checkout-half:hover{background:#f0f9ff}
+.dc.checkout-half::before{content:'';position:absolute;top:0;bottom:0;left:0;width:50%;pointer-events:none}
+.dc.checkout-half.co-res::before{background:var(--res-bg)}
+.dc.checkout-half.co-blk::before{background:var(--blk-bg)}
+html.dark .dc.checkout-half{background:#0f172a}
+html.dark .dc.checkout-half.wknd{background:#131e2e}
+html.dark .dc.checkout-half.today-col{background:#0c2340}
+html.dark .dc.checkout-half:hover{background:#1e293b}
+
 .bk-label{position:absolute;top:50%;left:5px;right:3px;transform:translateY(-50%);font-size:.66rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1}
 .bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}.bk-label.cap{color:var(--cap-fg)}.bk-label.free{color:var(--free-fg)}
 
@@ -1057,9 +1071,16 @@ function renderCal(){
           const isIcal=bk.type==='ical-block';
           const isCap=bk.type==='capacity-block';
           const isFree=bk.type==='ical-override';
-          cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
-          if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
-          if(isLast(bk,curY,curM,d))  cls+=' bk-end';
+          // Día de salida: reservas y bloqueos manuales guardan 'e' = fecha de
+          // salida → ese día solo se pinta la mitad izquierda (checkout).
+          const isCheckout=(isRes||bk.type==='block') && ds===bk.e && ds!==bk.s;
+          if(isCheckout){
+            cls+=' checkout-half '+(isRes?'co-res':'co-blk');
+          } else {
+            cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
+            if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
+            if(isLast(bk,curY,curM,d))  cls+=' bk-end';
+          }
           if(isFirst(bk,curY,curM,d)){
             const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):isCap?'Capacidad':isFree?'Libre':'Bloqueado';
             const cc=isRes?'r':isIcal?'ic':isCap?'cap':isFree?'free':'b';
