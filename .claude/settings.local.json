@@ -41,7 +41,19 @@
       "mcp__Claude_in_Chrome__javascript_tool",
       "mcp__Claude_in_Chrome__find",
       "mcp__Claude_in_Chrome__form_input",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cd /c/Users/detal/Desktop/DETALO/public && grep -n -E \"PROPS|destinos|destino|basePrice|precioBase|precio_base|ownerPrice|tab|Tab|TABS|switchTab|ical-block|liberar|Liberar|openDetail|modal|showModal|<style|</style>|<script|function render|porcentaje|comision|comisión\" index.html | head -120)",
+      "Bash(cd /c/Users/detal/Desktop/DETALO && grep -rn -iE \"base|porcentaje|comision|comisión|precioBase|owner|dueñ|ganancia\" public/index.html detalo.html server.js 2>/dev/null | head -40)",
+      "Bash(node -c server.js)",
+      "Bash(taskkill //PID 15164 //F)",
+      "Bash(curl -s http://localhost:3000/api/prop-prices)",
+      "Bash(curl -s -X POST http://localhost:3000/api/bookings -H \"Content-Type: application/json\" -d '{\"pid\":\"tq3\",\"type\":\"ical-block\",\"name\":\"CLOSED - Not available\",\"phone\":\"\",\"s\":\"2026-06-28\",\"e\":\"2026-06-30\",\"income\":0,\"platform\":\"Airbnb\",\"notes\":\"Importado de Airbnb\",\"source\":\"ical\",\"sourceId\":\"testsrc\",\"icalUid\":\"test-uid-123@airbnb\"}')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\).find\\(x=>x.id==='9ec9018b39feab7d'\\);console.log\\(JSON.stringify\\(b,null,1\\)\\);}\\)\")",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/9ec9018b39feab7d)",
+      "Bash(curl -s -X PUT http://localhost:3000/api/prop-prices -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>console.log\\(JSON.parse\\(d\\).length+' bookings'\\)\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
