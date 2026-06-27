@@ -454,6 +454,136 @@ html.dark .alert-item.warning{background:#2d2200;border-color:#78350f}
 .inc-month-label{font-size:.62rem;color:#94a3b8;text-align:center;white-space:nowrap}
 .inc-month-val{font-size:.6rem;color:#64748b;text-align:center;white-space:nowrap}
 .inc-empty{text-align:center;color:#94a3b8;padding:30px;font-size:.9rem}
+
+/* ══════════════════════════════════════════
+   MEJORA 1 — CONFIRMAR RESERVA (botón verde)
+══════════════════════════════════════════ */
+.btn-confirm{background:#16a34a;color:#fff}.btn-confirm:hover{background:#15803d}
+.confirm-info{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.84rem;color:#166534}
+.confirm-info b{color:#14532d}
+html.dark .confirm-info{background:#14291a;border-color:#22c55e;color:#bbf7d0}
+
+/* ══════════════════════════════════════════
+   MEJORA 3 — VISTA OPERACIONES
+══════════════════════════════════════════ */
+#opsPanel{flex:1;overflow:auto;padding:16px 20px;display:none;flex-direction:column;gap:14px;background:#f1f5f9}
+#opsPanel.visible{display:flex}
+.ops-counters{display:flex;gap:12px;flex-wrap:wrap}
+.ops-counter{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;flex:1;min-width:140px}
+.ops-counter .oc-num{font-size:1.7rem;font-weight:800;color:#0f172a;line-height:1}
+.ops-counter .oc-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-top:6px}
+.ops-counter .oc-sub{font-size:.7rem;color:#64748b;margin-top:3px}
+.ops-toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px}
+.ops-filter-grp{display:flex;flex-direction:column;gap:5px}
+.ops-filter-grp>span{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8}
+.ops-chips{display:flex;flex-wrap:wrap;gap:5px}
+.ops-chip{background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;padding:4px 11px;border-radius:14px;cursor:pointer;font-size:.74rem;font-weight:600;transition:all .12s;white-space:nowrap}
+.ops-chip.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
+.ops-search{border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:.84rem;color:#1e293b;background:#fff;min-width:170px}
+.ops-search:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)}
+.ops-actions{margin-left:auto;display:flex;gap:8px;align-items:flex-end}
+.ops-table-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:auto}
+.ops-tbl{width:100%;border-collapse:collapse;font-size:.82rem;min-width:880px}
+.ops-tbl th{position:sticky;top:0;background:#f8fafc;text-align:left;padding:10px 12px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:2px solid #e2e8f0;white-space:nowrap;cursor:pointer;user-select:none;z-index:2}
+.ops-tbl th:hover{color:#0ea5e9}
+.ops-tbl th .sort-arr{color:#0ea5e9;font-size:.7rem}
+.ops-tbl td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;color:#1e293b;white-space:nowrap}
+.ops-tbl tr:hover td{background:#f8fafc}
+.ops-tbl tr.pending td{background:#f8fafc;color:#94a3b8}
+.ops-tbl tr.pending:hover td{background:#f1f5f9}
+.ops-row-dates{font-weight:600}
+.ops-row-dates .out{color:#94a3b8;font-weight:400}
+.ops-prop{font-weight:600;color:#0f172a}
+.ops-prop .dest{display:block;font-size:.7rem;font-weight:400;color:#94a3b8}
+.ops-tbl tr.pending .ops-prop{color:#64748b}
+.ops-phone{color:#0369a1;text-decoration:none;font-weight:600}
+.ops-phone:hover{text-decoration:underline}
+.ops-plat{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.ops-plat .pdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ops-money{font-variant-numeric:tabular-nums;text-align:right}
+.ops-gain.pos{color:#16a34a;font-weight:700}
+.ops-gain.neg{color:#dc2626;font-weight:700}
+.ops-gain.muted{color:#94a3b8}
+.ops-status{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:12px}
+.ops-status.ok{background:#dcfce7;color:#15803d}
+.ops-status.pend{background:#e2e8f0;color:#64748b}
+.ops-notes{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;font-size:.76rem}
+.ops-empty{text-align:center;color:#94a3b8;padding:40px;font-size:.9rem}
+.btn-xls{background:#16a34a;color:#fff}.btn-xls:hover{background:#15803d}
+html.dark #opsPanel{background:#0f172a}
+html.dark .ops-counter,html.dark .ops-toolbar,html.dark .ops-table-wrap{background:#1e293b;border-color:#334155}
+html.dark .ops-counter .oc-num{color:#e2e8f0}
+html.dark .ops-tbl th{background:#172033;color:#94a3b8;border-bottom-color:#334155}
+html.dark .ops-tbl td{color:#e2e8f0;border-bottom-color:#334155}
+html.dark .ops-tbl tr:hover td{background:#172033}
+html.dark .ops-tbl tr.pending td{background:#172033;color:#64748b}
+html.dark .ops-prop{color:#e2e8f0}
+html.dark .ops-search{background:#0f172a;border-color:#334155;color:#e2e8f0}
+html.dark .ops-chip{background:#0f172a;border-color:#334155;color:#94a3b8}
+html.dark .ops-chip.on{background:#0ea5e9;border-color:#0284c7;color:#fff}
+html.dark .ops-status.pend{background:#334155;color:#94a3b8}
+
+/* Modal precios base */
+.prices-box{width:680px}
+.prices-hint{font-size:.8rem;color:#64748b;margin-bottom:14px}
+.prices-tbl{width:100%;border-collapse:collapse;font-size:.84rem}
+.prices-tbl th{text-align:left;padding:8px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;border-bottom:2px solid #e2e8f0}
+.prices-tbl td{padding:6px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.prices-dest td{background:#f8fafc;font-weight:700;color:#0369a1;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+.prices-tbl input[type=number]{width:120px;border:1.5px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:.84rem;font-family:inherit}
+.prices-tbl input[type=number]:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12)}
+.prices-tbl input[type=number]:disabled{background:#f1f5f9;color:#cbd5e1}
+.prices-pct{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:#475569;cursor:pointer}
+.prices-pct input{accent-color:#0ea5e9;width:15px;height:15px}
+html.dark .prices-dest td{background:#172033;color:#7dd3fc}
+html.dark .prices-tbl input[type=number]{background:#0f172a;border-color:#334155;color:#e2e8f0}
+html.dark .prices-tbl input[type=number]:disabled{background:#1e293b;color:#475569}
+
+/* ══════════════════════════════════════════
+   MEJORA 2 — RESPONSIVO (iPhone / iPad)
+══════════════════════════════════════════ */
+/* Tablet: ocultar leyenda para liberar espacio */
+@media (max-width:1100px){
+  .legend{display:none}
+}
+/* Tablet pequeña / iPad vertical */
+@media (max-width:900px){
+  .app-hdr{gap:8px;padding:0 12px}
+  .main-tab{padding:5px 9px;font-size:.74rem}
+  .search-input{width:120px}
+  .search-input:focus{width:150px}
+}
+/* Teléfono: header reflujo en varias filas, month-nav siempre visible y grande */
+@media (max-width:760px){
+  .app-hdr{height:auto;min-height:54px;flex-wrap:wrap;padding:8px 10px;gap:7px 8px;align-items:center}
+  .logo{font-size:1.2rem}
+  /* Ocultar lo menos importante en pantallas muy pequeñas */
+  .sync-chip,.btn-compact{display:none!important}
+  .btn-sync{padding:5px 9px}
+  /* Buscador: que ocupe el espacio sobrante de la primera fila */
+  .search-wrap{order:6;flex:1 1 130px;min-width:120px}
+  .search-input,.search-input:focus{width:100%}
+  /* Pestañas principales: scroll horizontal si no caben */
+  .main-tabs{order:7;width:100%;margin-left:0;overflow-x:auto;gap:6px;-webkit-overflow-scrolling:touch}
+  .main-tab{flex:0 0 auto;padding:7px 12px;font-size:.78rem}
+  /* Navegación de mes: fila propia, siempre visible y táctil */
+  .month-nav{order:9;width:100%;margin-left:0;justify-content:center;gap:8px;padding-top:2px}
+  .nav-btn{width:40px;height:40px;font-size:1.3rem}
+  .month-lbl{flex:1;min-width:0;font-size:1rem}
+  .btn-hoy{padding:9px 16px;font-size:.85rem}
+  /* Inputs ≥16px: evita el zoom automático de iOS al enfocar */
+  .fg input,.fg select,.fg textarea,.ops-search,.notes-textarea,.prices-tbl input{font-size:16px!important}
+  /* Modales ocupan casi toda la pantalla */
+  .settings-box,.prices-box,.alerts-box,.notes-box{width:100%}
+  .mbody{padding:16px}
+  /* Operaciones: barra de herramientas apilada */
+  #opsPanel,#upcomingPanel,#incomePanel{padding:12px}
+  .ops-actions{margin-left:0;width:100%}
+  .ops-actions .btn{flex:1}
+  .ops-counters{gap:8px}
+  .ops-counter{min-width:calc(50% - 4px)}
+  .frow{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -476,6 +606,7 @@ html.dark .alert-item.warning{background:#2d2200;border-color:#78350f}
     <div class="main-tabs">
       <button class="main-tab on" id="tabCal">📅 Calendario</button>
       <button class="main-tab" id="tabUpcoming">🔑 Próximas</button>
+      <button class="main-tab" id="tabOps">📋 Operaciones</button>
       <button class="main-tab" id="tabIncome">💰 Ingresos</button>
     </div>
     <div id="syncChip" class="sync-chip idle" title="Estado de sincronización iCal">⏸ Sin fuentes</div>
@@ -505,6 +636,7 @@ html.dark .alert-item.warning{background:#2d2200;border-color:#78350f}
   </div>
 
   <div id="upcomingPanel"></div>
+  <div id="opsPanel"></div>
   <div id="incomePanel"></div>
   <!-- Stats floating panel (se posiciona dinámicamente) -->
   <div id="statsPanel" class="stats-panel" style="display:none"></div>
@@ -519,6 +651,7 @@ html.dark .alert-item.warning{background:#2d2200;border-color:#78350f}
     </div>
     <div class="mbody" id="viewBody"></div>
     <div class="mfoot" id="viewFoot">
+      <button class="btn btn-confirm" id="btnConfirmar" style="display:none">✅ Confirmar reserva</button>
       <button class="btn btn-warn" id="btnLiberar" style="display:none">Liberar fechas</button>
       <button class="btn btn-del" id="btnDel">Eliminar</button>
       <button class="btn btn-sec" id="btnViewCerrar">Cerrar</button>
@@ -652,6 +785,58 @@ html.dark .alert-item.warning{background:#2d2200;border-color:#78350f}
   </div>
 </div>
 
+<!-- ═══ MODAL CONFIRMAR RESERVA (desde bloque iCal) ═══ -->
+<div class="overlay" id="confirmOv">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mtitle">✅ Confirmar reserva</div>
+      <button class="mclose" id="confirmClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <div class="confirm-info" id="confirmInfo"></div>
+      <div class="frow">
+        <div class="fg"><label>Nombre huésped <span class="req">*</span></label><input type="text" id="cName" placeholder="Nombre completo"></div>
+        <div class="fg"><label>Teléfono</label><input type="tel" id="cPhone" placeholder="+52 33 0000 0000"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Ingreso bruto ($)</label><input type="number" id="cIncome" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="fg">
+          <label>Plataforma</label>
+          <select id="cPlatform">
+            <option value="">Seleccionar…</option>
+            <option>Airbnb</option><option>Booking.com</option><option>VRBO</option><option>Expedia</option>
+            <option>Directo</option><option>Facebook</option><option>WhatsApp</option><option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Notas</label><textarea id="cNotes" placeholder="Peticiones especiales, notas adicionales…"></textarea></div>
+      <input type="hidden" id="cBkId">
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="confirmCancel">Cancelar</button>
+      <button class="btn btn-confirm" id="btnConfirmSave">✅ Confirmar reserva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL PRECIOS BASE DEL DUEÑO ═══ -->
+<div class="overlay" id="pricesOv">
+  <div class="mbox prices-box">
+    <div class="mhdr">
+      <div class="mtitle">💵 Precios base del dueño</div>
+      <button class="mclose" id="pricesClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <p class="prices-hint">Precio base por <b>noche</b> que cobra el dueño. La <b>ganancia estimada</b> = ingreso bruto − (precio base × noches). Marca <b>“por %”</b> en las propiedades que operan por porcentaje: en esas solo se muestra el ingreso bruto, sin ganancia.</p>
+      <div id="pricesBody"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="pricesCancel">Cancelar</button>
+      <button class="btn btn-pri" id="btnPricesSave">💾 Guardar precios</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // DATOS ESTÁTICOS
@@ -716,6 +901,25 @@ let propNotes   = {};          // { propId: 'texto' }
 let compactMode = false;
 let _statsCloseTimer = null;
 let activeNotesPid = null;
+// Precios base del dueño: { propId: { base:Number, percent:Bool } }
+let propPrices  = {};
+
+// Colores de plataforma para la vista Operaciones
+const PLATFORM_COLORS = {
+  'Airbnb':'#FF5A5F','Booking.com':'#003580','Booking':'#003580','VRBO':'#3D5AFE',
+  'Expedia':'#FFC72C','Directo':'#16a34a','Facebook':'#1877F2','WhatsApp':'#25D366',
+  'iCal':'#f97316','Otro':'#64748b','':'#94a3b8',
+};
+function platColor(p){ return PLATFORM_COLORS[p] || '#64748b'; }
+
+// Config de precio de una propiedad (con default: GDL = por porcentaje)
+function priceCfg(pid){
+  const cfg = propPrices[pid];
+  if(cfg) return { base: Number(cfg.base)||0, percent: !!cfg.percent };
+  const prop = PROPS.find(p=>p.id===pid);
+  const defPct = prop && prop.dest === 'Guadalajara';   // GDL por % por defecto
+  return { base:0, percent: defPct };
+}
 
 // ═══════════════════════════════════════════
 // UTILIDADES
@@ -910,9 +1114,11 @@ function openView(id){
   document.getElementById('viewBody').innerHTML=h;
   const btnDel=document.getElementById('btnDel');
   const btnLib=document.getElementById('btnLiberar');
+  const btnConf=document.getElementById('btnConfirmar');
   btnDel.style.display = (isIcal||isCap) ? 'none' : '';
   btnDel.textContent   = isFree ? 'Eliminar override' : 'Eliminar';
   btnLib.style.display = isIcal ? '' : 'none';
+  btnConf.style.display = isIcal ? '' : 'none';
   document.getElementById('viewOv').classList.add('on');
 }
 function closeView(){ document.getElementById('viewOv').classList.remove('on'); activeId=null; }
@@ -1412,13 +1618,16 @@ function switchTab(tab){
   activeMainTab = tab;
   document.getElementById('tabCal').classList.toggle('on', tab==='cal');
   document.getElementById('tabUpcoming').classList.toggle('on', tab==='upcoming');
+  document.getElementById('tabOps').classList.toggle('on', tab==='ops');
   document.getElementById('tabIncome').classList.toggle('on', tab==='income');
   document.getElementById('calShell').style.display    = tab==='cal' ? '' : 'none';
   document.getElementById('monthNav').style.display    = tab==='cal' ? '' : 'none';
   document.getElementById('btnCompact').style.display  = tab==='cal' ? '' : 'none';
   document.getElementById('upcomingPanel').classList.toggle('visible', tab==='upcoming');
+  document.getElementById('opsPanel').classList.toggle('visible', tab==='ops');
   document.getElementById('incomePanel').classList.toggle('visible', tab==='income');
   if(tab==='upcoming') renderUpcoming();
+  if(tab==='ops')      renderOps();
   if(tab==='income')   renderIncome();
 }
 
@@ -1887,6 +2096,340 @@ async function liberarIcalBlock(bk){
 }
 
 // ═══════════════════════════════════════════
+// MEJORA 1 — CONFIRMAR RESERVA (desde bloque iCal)
+// ═══════════════════════════════════════════
+function openConfirmReserva(bk){
+  const prop = PROPS.find(p=>p.id===bk.pid);
+  const nights = nightCount(bk.s,bk.e);
+  document.getElementById('cBkId').value = bk.id;
+  document.getElementById('confirmInfo').innerHTML =
+    `<b>${prop?prop.name:bk.pid}</b>${prop&&prop.group?' · '+prop.group:''} · ${prop?prop.dest:''}<br>
+     📅 ${fmtDate(bk.s)} → ${fmtDate(bk.e)} · ${nights} noche${nights!==1?'s':''}`;
+  document.getElementById('cName').value    = (bk.name && bk.name!=='Bloqueado') ? bk.name : '';
+  document.getElementById('cPhone').value   = bk.phone || '';
+  document.getElementById('cIncome').value  = bk.income ? bk.income : '';
+  document.getElementById('cPlatform').value= [...document.getElementById('cPlatform').options].some(o=>o.value===bk.platform) ? bk.platform : '';
+  document.getElementById('cNotes').value   = (bk.notes && !/^Importado de/.test(bk.notes)) ? bk.notes : '';
+  document.getElementById('confirmOv').classList.add('on');
+  setTimeout(()=>document.getElementById('cName').focus(),120);
+}
+function closeConfirm(){ document.getElementById('confirmOv').classList.remove('on'); }
+
+async function guardarConfirmReserva(){
+  const id = document.getElementById('cBkId').value;
+  const bk = bookings.find(b=>b.id===id);
+  if(!bk) return;
+  const name = document.getElementById('cName').value.trim();
+  if(!name){ alert('Ingresa el nombre del huésped.'); return; }
+  const payload = {
+    ...bk, id,
+    type:'reservation',
+    name,
+    phone:    document.getElementById('cPhone').value.trim(),
+    income:   parseFloat(document.getElementById('cIncome').value)||0,
+    platform: document.getElementById('cPlatform').value || bk.platform || '',
+    notes:    document.getElementById('cNotes').value.trim(),
+    // Desligar del sync para que el bloque no se borre ni se vuelva a importar.
+    // Se conserva icalUid: el servidor lo usa para no recrear el bloque naranja.
+    source:'', sourceId:'', confirmedFromIcal:true,
+  };
+  try {
+    await api('PUT',`/api/bookings/${id}`, payload);
+    await refreshBookings();
+    closeConfirm(); closeView(); renderCal(); updateAlerts();
+    if(activeMainTab==='ops') renderOps();
+  } catch(err){ alert('Error al confirmar la reserva: '+err.message); }
+}
+
+// ═══════════════════════════════════════════
+// MEJORA 3 — PRECIOS BASE DEL DUEÑO (UI editable)
+// ═══════════════════════════════════════════
+async function loadPropPrices(){
+  try { propPrices = await api('GET','/api/prop-prices'); }
+  catch{ propPrices = {}; }
+}
+
+function openPrices(){
+  let rows='';
+  DESTINATIONS.forEach(dest=>{
+    rows += `<tr class="prices-dest"><td colspan="3">${dest}</td></tr>`;
+    PROPS.filter(p=>p.dest===dest).forEach(p=>{
+      const cfg = priceCfg(p.id);
+      rows += `<tr>
+        <td>${p.name}${p.group?`<span style="color:#94a3b8;font-size:.72rem"> · ${p.group}</span>`:''}</td>
+        <td><input type="number" min="0" step="1" id="pr_${p.id}" value="${cfg.base||''}" placeholder="0" ${cfg.percent?'disabled':''}></td>
+        <td><label class="prices-pct"><input type="checkbox" id="pp_${p.id}" ${cfg.percent?'checked':''}> por %</label></td>
+      </tr>`;
+    });
+  });
+  document.getElementById('pricesBody').innerHTML = `
+    <table class="prices-tbl">
+      <thead><tr><th>Propiedad</th><th>Precio base / noche</th><th>Modalidad</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  // Deshabilitar el input de precio cuando se marca "por %"
+  PROPS.forEach(p=>{
+    const chk = document.getElementById('pp_'+p.id);
+    chk.addEventListener('change',()=>{
+      const inp = document.getElementById('pr_'+p.id);
+      inp.disabled = chk.checked;
+      if(chk.checked) inp.value='';
+    });
+  });
+  document.getElementById('pricesOv').classList.add('on');
+}
+function closePrices(){ document.getElementById('pricesOv').classList.remove('on'); }
+
+async function guardarPrices(){
+  const out = {};
+  PROPS.forEach(p=>{
+    const percent = document.getElementById('pp_'+p.id).checked;
+    const base    = parseFloat(document.getElementById('pr_'+p.id).value)||0;
+    if(percent || base>0) out[p.id] = { base: percent?0:base, percent };
+  });
+  try {
+    const r = await api('PUT','/api/prop-prices', out);
+    propPrices = r.prices || out;
+    closePrices();
+    if(activeMainTab==='ops') renderOps();
+  } catch(err){ alert('Error al guardar precios: '+err.message); }
+}
+
+// ═══════════════════════════════════════════
+// MEJORA 3 — VISTA OPERACIONES
+// ═══════════════════════════════════════════
+const OPS_DEST = [
+  {lbl:'Todos',   val:'Todos'},
+  {lbl:'Tequila', val:'Tequila'},
+  {lbl:'Tapalpa', val:'Tapalpa'},
+  {lbl:'Mazamitla',val:'Mazamitla'},
+  {lbl:'Vallarta',val:'Nuevo Vallarta'},
+  {lbl:'GDL',     val:'Guadalajara'},
+  {lbl:'San Pedro',val:'San Pedro Tesistán'},
+];
+const OPS_PLAT = ['Todas','Airbnb','Booking.com','Expedia','Directo'];
+const OPS_PERIOD = [
+  {lbl:'Todas',       val:'all'},
+  {lbl:'Hoy',         val:'today'},
+  {lbl:'Esta semana', val:'week'},
+  {lbl:'Este mes',    val:'month'},
+  {lbl:'Próximo mes', val:'next'},
+];
+let opsFilters = { dest:'Todos', plat:'Todas', period:'all', search:'' };
+let opsSort    = { col:'in', dir:1 };   // por fecha de entrada asc
+
+// Calcula noches y ganancia estimada de un registro
+function opsGain(bk, nights){
+  const cfg = priceCfg(bk.pid);
+  if(cfg.percent) return { type:'percent' };
+  if(!cfg.base)   return { type:'none' };
+  if(!bk.income)  return { type:'none' };
+  return { type:'value', value: bk.income - cfg.base*nights };
+}
+
+function opsPeriodRange(period){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const t = today.toISOString().slice(0,10);
+  if(period==='today')  return { s:t, e:t };
+  if(period==='week')   return { s:t, e:addDaysStr(t,6) };
+  if(period==='month'){
+    const y=today.getFullYear(), m=today.getMonth();
+    return { s:`${y}-${pad2(m+1)}-01`, e:`${y}-${pad2(m+1)}-${pad2(new Date(y,m+1,0).getDate())}` };
+  }
+  if(period==='next'){
+    let y=today.getFullYear(), m=today.getMonth()+1; if(m>11){m=0;y++;}
+    return { s:`${y}-${pad2(m+1)}-01`, e:`${y}-${pad2(m+1)}-${pad2(new Date(y,m+1,0).getDate())}` };
+  }
+  return null;
+}
+
+function opsRows(){
+  // Confirmadas (reservas reales) + Pendientes (bloques iCal sin confirmar)
+  let rows = bookings
+    .filter(b => b.type==='reservation' || b.type==='ical-block')
+    .map(b=>{
+      const prop = PROPS.find(p=>p.id===b.pid);
+      const nights = nightCount(b.s,b.e);
+      return {
+        bk:b, prop, nights,
+        confirmed: b.type==='reservation',
+        name: b.type==='reservation' ? (b.name||'Sin nombre') : (b.name && b.name!=='Bloqueado' ? b.name : '—'),
+        dest: prop?prop.dest:'',
+        platform: b.platform || (b.type==='ical-block'?'iCal':''),
+        gain: opsGain(b, nights),
+      };
+    });
+  // Filtro destino
+  if(opsFilters.dest!=='Todos') rows = rows.filter(r=>r.dest===opsFilters.dest);
+  // Filtro plataforma
+  if(opsFilters.plat!=='Todas') rows = rows.filter(r=>{
+    if(opsFilters.plat==='Booking.com') return /booking/i.test(r.platform);
+    return r.platform===opsFilters.plat;
+  });
+  // Filtro periodo (por fecha de entrada)
+  const range = opsPeriodRange(opsFilters.period);
+  if(range) rows = rows.filter(r=>r.bk.s>=range.s && r.bk.s<=range.e);
+  // Buscador por nombre
+  const q = opsFilters.search.trim().toLowerCase();
+  if(q) rows = rows.filter(r=>r.name.toLowerCase().includes(q));
+  // Orden: confirmadas primero, pendientes al final; dentro de cada grupo por columna
+  const dir = opsSort.dir;
+  const cmp = (a,b)=>{
+    if(a.confirmed!==b.confirmed) return a.confirmed?-1:1; // pendientes siempre al final
+    let va,vb;
+    switch(opsSort.col){
+      case 'out':   va=a.bk.e; vb=b.bk.e; break;
+      case 'prop':  va=(a.prop?.name||''); vb=(b.prop?.name||''); break;
+      case 'name':  va=a.name.toLowerCase(); vb=b.name.toLowerCase(); break;
+      case 'plat':  va=a.platform; vb=b.platform; break;
+      case 'nights':va=a.nights; vb=b.nights; break;
+      case 'income':va=a.bk.income||0; vb=b.bk.income||0; break;
+      case 'gain':  va=a.gain.type==='value'?a.gain.value:-Infinity; vb=b.gain.type==='value'?b.gain.value:-Infinity; break;
+      default:      va=a.bk.s; vb=b.bk.s; // 'in'
+    }
+    if(va<vb) return -1*dir; if(va>vb) return 1*dir; return 0;
+  };
+  return rows.sort(cmp);
+}
+
+function renderOps(){
+  const panel = document.getElementById('opsPanel');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+  const tmrwStr  = addDaysStr(todayStr,1);
+
+  // ── Contadores ──
+  const confirmed = bookings.filter(b=>b.type==='reservation');
+  const resHoy   = confirmed.filter(b=>b.s<=todayStr && b.e>=todayStr).length;
+  const checkinsManana = confirmed.filter(b=>b.s===tmrwStr).length;
+
+  const y=today.getFullYear(), m=today.getMonth();
+  const daysInMo = new Date(y,m+1,0).getDate();
+  const moStart=`${y}-${pad2(m+1)}-01`, moEnd=`${y}-${pad2(m+1)}-${pad2(daysInMo)}`;
+  // Ocupación: noches ocupadas (reserva/ical-block/block) / (propiedades × días del mes)
+  const occ = new Set();
+  bookings.filter(b=>['reservation','ical-block','block'].includes(b.type) && b.s<=moEnd && b.e>=moStart)
+    .forEach(b=>{
+      let d=new Date(Math.max(new Date(b.s),new Date(moStart)));
+      const eD=new Date(Math.min(new Date(b.e),new Date(moEnd)));
+      while(d<=eD){ occ.add(b.pid+'|'+d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+    });
+  const occPct = Math.round(occ.size/(PROPS.length*daysInMo)*100);
+  const ingresoMes = confirmed.filter(b=>b.s>=moStart&&b.s<=moEnd).reduce((s,b)=>s+(b.income||0),0);
+
+  // ── Filtros ──
+  const destChips = OPS_DEST.map(d=>`<button class="ops-chip${opsFilters.dest===d.val?' on':''}" data-fdest="${d.val}">${d.lbl}</button>`).join('');
+  const platChips = OPS_PLAT.map(p=>`<button class="ops-chip${opsFilters.plat===p?' on':''}" data-fplat="${p}">${p==='Booking.com'?'Booking':p}</button>`).join('');
+  const perChips  = OPS_PERIOD.map(p=>`<button class="ops-chip${opsFilters.period===p.val?' on':''}" data-fper="${p.val}">${p.lbl}</button>`).join('');
+
+  // ── Filas ──
+  const rows = opsRows();
+  const arr = c => opsSort.col===c ? `<span class="sort-arr">${opsSort.dir>0?'▲':'▼'}</span>` : '';
+  const cols = [
+    ['in','Entrada / Salida'],['prop','Propiedad'],['name','Huésped'],['','Teléfono'],
+    ['plat','Plataforma'],['nights','Noches'],['income','Ingreso bruto'],['gain','Ganancia est.'],
+    ['','Estado'],['','Notas'],
+  ];
+  const thead = cols.map(([c,lbl])=>c
+    ? `<th data-sort="${c}">${lbl} ${arr(c)}</th>`
+    : `<th>${lbl}</th>`).join('');
+
+  const tbody = rows.map(r=>{
+    const b=r.bk;
+    const phone = b.phone ? `<a class="ops-phone" href="tel:${b.phone.replace(/\s/g,'')}">📞 ${b.phone}</a>` : '—';
+    const plat  = r.platform ? `<span class="ops-plat"><span class="pdot" style="background:${platColor(r.platform)}"></span>${r.platform}</span>` : '—';
+    let gain='<span class="ops-gain muted">—</span>';
+    if(r.gain.type==='percent') gain='<span class="ops-gain muted" title="Propiedad por porcentaje">% (solo bruto)</span>';
+    else if(r.gain.type==='value') gain=`<span class="ops-gain ${r.gain.value>=0?'pos':'neg'}">${fmtMoney(r.gain.value)}</span>`;
+    const status = r.confirmed
+      ? '<span class="ops-status ok">● Confirmada</span>'
+      : '<span class="ops-status pend">● Pendiente</span>';
+    const notes = b.notes ? `<div class="ops-notes" title="${(b.notes||'').replace(/"/g,'&quot;')}">${b.notes}</div>` : '—';
+    return `<tr class="${r.confirmed?'':'pending'}" data-bk="${b.id}">
+      <td class="ops-row-dates">${fmtDate(b.s)} <span class="out">→ ${fmtDate(b.e)}</span></td>
+      <td><span class="ops-prop">${r.prop?r.prop.name:b.pid}<span class="dest">${r.dest}${r.prop&&r.prop.group?' · '+r.prop.group:''}</span></span></td>
+      <td>${r.name}</td>
+      <td>${phone}</td>
+      <td>${plat}</td>
+      <td style="text-align:center">${r.nights}</td>
+      <td class="ops-money">${b.income?fmtMoney(b.income):'—'}</td>
+      <td class="ops-money">${gain}</td>
+      <td>${status}</td>
+      <td>${notes}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="ops-counters">
+      <div class="ops-counter"><div class="oc-num">${resHoy}</div><div class="oc-lbl">Reservas hoy</div><div class="oc-sub">huéspedes en casa</div></div>
+      <div class="ops-counter"><div class="oc-num">${checkinsManana}</div><div class="oc-lbl">Check-ins mañana</div><div class="oc-sub">${fmtDate(tmrwStr)}</div></div>
+      <div class="ops-counter"><div class="oc-num">${occPct}%</div><div class="oc-lbl">Ocupación ${MONTH_NAMES[m]}</div><div class="oc-sub">${occ.size}/${PROPS.length*daysInMo} noches</div></div>
+      <div class="ops-counter"><div class="oc-num">${fmtMoney(ingresoMes)}</div><div class="oc-lbl">Ingresos ${MONTH_NAMES[m]}</div><div class="oc-sub">${confirmed.filter(b=>b.s>=moStart&&b.s<=moEnd).length} reservas</div></div>
+    </div>
+    <div class="ops-toolbar">
+      <div class="ops-filter-grp"><span>Destino</span><div class="ops-chips">${destChips}</div></div>
+      <div class="ops-filter-grp"><span>Plataforma</span><div class="ops-chips">${platChips}</div></div>
+      <div class="ops-filter-grp"><span>Periodo</span><div class="ops-chips">${perChips}</div></div>
+      <div class="ops-filter-grp"><span>Huésped</span><input class="ops-search" id="opsSearch" type="text" placeholder="Buscar nombre…" value="${opsFilters.search.replace(/"/g,'&quot;')}"></div>
+      <div class="ops-actions">
+        <button class="btn btn-sec" id="btnOpsPrices">💵 Precios base</button>
+        <button class="btn btn-xls" id="btnOpsExport">⬇ Exportar CSV</button>
+      </div>
+    </div>
+    <div class="ops-table-wrap">
+      <table class="ops-tbl">
+        <thead><tr>${thead}</tr></thead>
+        <tbody>${rows.length?tbody:`<tr><td colspan="10"><div class="ops-empty">No hay reservas con los filtros actuales.</div></td></tr>`}</tbody>
+      </table>
+    </div>`;
+
+  // ── Eventos ──
+  panel.querySelectorAll('[data-fdest]').forEach(el=>el.addEventListener('click',()=>{ opsFilters.dest=el.dataset.fdest; renderOps(); }));
+  panel.querySelectorAll('[data-fplat]').forEach(el=>el.addEventListener('click',()=>{ opsFilters.plat=el.dataset.fplat; renderOps(); }));
+  panel.querySelectorAll('[data-fper]').forEach(el=>el.addEventListener('click',()=>{ opsFilters.period=el.dataset.fper; renderOps(); }));
+  panel.querySelectorAll('th[data-sort]').forEach(el=>el.addEventListener('click',()=>{
+    const c=el.dataset.sort;
+    if(opsSort.col===c) opsSort.dir*=-1; else { opsSort.col=c; opsSort.dir=1; }
+    renderOps();
+  }));
+  const searchEl=document.getElementById('opsSearch');
+  searchEl.addEventListener('input',()=>{
+    opsFilters.search=searchEl.value;
+    clearTimeout(searchEl._t);
+    searchEl._t=setTimeout(()=>{ renderOps(); const ne=document.getElementById('opsSearch'); ne.focus(); ne.setSelectionRange(ne.value.length,ne.value.length); },300);
+  });
+  panel.querySelectorAll('tr[data-bk]').forEach(tr=>tr.addEventListener('click',()=>openView(tr.dataset.bk)));
+  document.getElementById('btnOpsPrices').addEventListener('click',openPrices);
+  document.getElementById('btnOpsExport').addEventListener('click',exportOpsCSV);
+}
+
+function exportOpsCSV(){
+  const rows = opsRows();
+  const head = ['Entrada','Salida','Propiedad','Destino','Grupo','Huésped','Teléfono','Plataforma','Noches','Ingreso bruto','Ganancia estimada','Estado','Notas'];
+  const esc = v => { const s=String(v??''); return /[",;\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [head.join(';')];
+  for(const r of rows){
+    const b=r.bk;
+    let gain='';
+    if(r.gain.type==='value') gain=r.gain.value;
+    else if(r.gain.type==='percent') gain='por %';
+    lines.push([
+      b.s, b.e, r.prop?r.prop.name:b.pid, r.dest, r.prop?.group||'',
+      r.name, b.phone||'', r.platform, r.nights, b.income||0, gain,
+      r.confirmed?'Confirmada':'Pendiente', b.notes||'',
+    ].map(esc).join(';'));
+  }
+  const csv = '﻿'+lines.join('\r\n');   // BOM → acentos correctos en Excel
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `detalo-operaciones-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// ═══════════════════════════════════════════
 // NAVEGACIÓN
 // ═══════════════════════════════════════════
 function updateLabel(){
@@ -1918,6 +2461,7 @@ async function init(){
   try { await refreshBookings(); }
   catch(e){ console.error('Error cargando reservas:', e); bookings=[]; }
   await loadPropNotes();
+  await loadPropPrices();
   renderCal();
   await updateSyncChip();
 
@@ -2096,6 +2640,21 @@ async function init(){
   document.getElementById('btnLiberar').addEventListener('click',()=>{
     if(activeId){ const bk=bookings.find(b=>b.id===activeId); if(bk) liberarIcalBlock(bk); }
   });
+  document.getElementById('btnConfirmar').addEventListener('click',()=>{
+    if(activeId){ const bk=bookings.find(b=>b.id===activeId); if(bk) openConfirmReserva(bk); }
+  });
+
+  // Modal confirmar reserva
+  document.getElementById('confirmClose').addEventListener('click',closeConfirm);
+  document.getElementById('confirmCancel').addEventListener('click',closeConfirm);
+  document.getElementById('confirmOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeConfirm();});
+  document.getElementById('btnConfirmSave').addEventListener('click',guardarConfirmReserva);
+
+  // Modal precios base
+  document.getElementById('pricesClose').addEventListener('click',closePrices);
+  document.getElementById('pricesCancel').addEventListener('click',closePrices);
+  document.getElementById('pricesOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closePrices();});
+  document.getElementById('btnPricesSave').addEventListener('click',guardarPrices);
 
   // Modal form
   document.getElementById('formClose').addEventListener('click',closeForm);
@@ -2113,6 +2672,7 @@ async function init(){
   // Tabs principales
   document.getElementById('tabCal').addEventListener('click', ()=>switchTab('cal'));
   document.getElementById('tabUpcoming').addEventListener('click', ()=>switchTab('upcoming'));
+  document.getElementById('tabOps').addEventListener('click', ()=>switchTab('ops'));
   document.getElementById('tabIncome').addEventListener('click', ()=>switchTab('income'));
 
   // Alertas
@@ -2146,7 +2706,7 @@ async function init(){
   });
 
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); closeAlerts(); closeNotesModal(); document.getElementById('statsPanel').style.display='none'; }
+    if(e.key==='Escape'){ closeView(); closeForm(); closeSettings(); closeMultiBlock(); closeAlerts(); closeNotesModal(); closeConfirm(); closePrices(); document.getElementById('statsPanel').style.display='none'; }
   });
 }
 

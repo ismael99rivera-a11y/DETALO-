@@ -18,9 +18,10 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 //             y monta un volumen persistente en /data desde el dashboard.
 // En local:   usa ./data automáticamente (sin configurar nada).
 const DATA_DIR   = process.env.DATA_DIR || path.join(ROOT, 'data');
-const BOOKINGS_F   = path.join(DATA_DIR, 'bookings.json');
-const SOURCES_F    = path.join(DATA_DIR, 'ical-sources.json');
-const PROP_NOTES_F = path.join(DATA_DIR, 'prop-notes.json');
+const BOOKINGS_F    = path.join(DATA_DIR, 'bookings.json');
+const SOURCES_F     = path.join(DATA_DIR, 'ical-sources.json');
+const PROP_NOTES_F  = path.join(DATA_DIR, 'prop-notes.json');
+const PROP_PRICES_F = path.join(DATA_DIR, 'prop-prices.json');
 
 for (const d of [DATA_DIR, PUBLIC_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
@@ -479,6 +480,21 @@ async function _doSync() {
   // Limpiar ical-blocks huérfanos (cuya fuente ya no existe)
   bookings = cleanOrphans(bookings, updatedSources);
 
+  // Suprimir ical-blocks ya confirmados como reserva manual (mismo icalUid).
+  // Al "Confirmar reserva" el bloque pasa a type=reservation conservando su icalUid;
+  // así evitamos que el próximo sync vuelva a crear el bloque naranja duplicado.
+  const confirmedUids = new Set(
+    bookings.filter(b => b.type === 'reservation' && b.icalUid).map(b => b.icalUid)
+  );
+  if (confirmedUids.size) {
+    const before = bookings.length;
+    bookings = bookings.filter(b =>
+      !(b.type === 'ical-block' && b.icalUid && confirmedUids.has(b.icalUid))
+    );
+    const supr = before - bookings.length;
+    if (supr > 0) slog(`[Confirmadas] ${supr} bloque(s) iCal suprimidos (ya confirmados como reserva)`);
+  }
+
   // Suprimir ical-blocks cubiertos por ical-overrides manuales
   const overrides = bookings.filter(b => b.type === 'ical-override');
   if (overrides.length) {
@@ -558,6 +574,25 @@ app.put('/api/prop-notes/:propId', (req, res) => {
   else      delete notes[req.params.propId];
   writeJSON(PROP_NOTES_F, notes);
   res.json({ ok: true });
+});
+
+// ── PROP PRICES (precio base del dueño por propiedad) ────
+// Estructura: { [propId]: { base: Number(por noche), percent: Boolean } }
+// percent=true  → propiedad por porcentaje: no se calcula ganancia (solo ingreso bruto)
+app.get('/api/prop-prices', (_req, res) => {
+  res.json(readJSON(PROP_PRICES_F, {}));
+});
+app.put('/api/prop-prices', (req, res) => {
+  const incoming = req.body && typeof req.body === 'object' ? req.body : {};
+  const clean = {};
+  for (const [pid, cfg] of Object.entries(incoming)) {
+    if (!cfg || typeof cfg !== 'object') continue;
+    const base    = Number(cfg.base) || 0;
+    const percent = !!cfg.percent;
+    if (base > 0 || percent) clean[pid] = { base, percent };
+  }
+  writeJSON(PROP_PRICES_F, clean);
+  res.json({ ok: true, prices: clean });
 });
 
 // ── DETECCIÓN DE CONFLICTOS ──────────────────────────────
