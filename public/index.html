@@ -948,6 +948,13 @@ function isWeekend(y,m,d){ const w=dayOfWeek(y,m,d); return w===0||w===6; }
 function fmtDate(s){ if(!s)return'—'; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; }
 function fmtMoney(n){ return n?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n):'—'; }
 function nightCount(s,e){ return(!s||!e)?0:Math.round((new Date(e)-new Date(s))/864e5); }
+// Noches reales de una reserva/bloque. Los bloques iCal guardan 'e' como la
+// ÚLTIMA noche ocupada (inclusiva), así que sus noches = nightCount + 1.
+// El resto (reservas manuales) guardan 'e' = fecha de salida → nightCount directo.
+function bkNights(bk){
+  if(!bk||!bk.s||!bk.e) return 0;
+  return bk.type==='ical-block' ? nightCount(bk.s,bk.e)+1 : nightCount(bk.s,bk.e);
+}
 function fmtTime(iso){ return iso?new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):''; }
 
 // ═══════════════════════════════════════════
@@ -1104,7 +1111,7 @@ function openView(id){
   const isIcal=bk.type==='ical-block';
   const isCap=bk.type==='capacity-block';
   const isFree=bk.type==='ical-override';
-  const nights=nightCount(bk.s,bk.e);
+  const nights=bkNights(bk);
   document.getElementById('viewTitle').textContent=isRes?'Detalle de Reserva':isIcal?'Bloqueo iCal':isCap?'Bloqueo por Capacidad':isFree?'Override — Fechas libres':'Detalle de Bloqueo';
   const badge=isRes?'🟢 Reserva':isIcal?'🔗 Importado de iCal':isCap?'🔒 Bloqueo por capacidad':isFree?'🟩 Fechas liberadas (override)':'🔴 Bloqueo por dueño';
   const bc=isRes?'r':isIcal?'ic':isCap?'cap':isFree?'free':'b';
@@ -1569,7 +1576,7 @@ function renderUpcoming(){
     const propDest = prop ? (prop.dest + (prop.group ? ' · '+prop.group : '')) : '';
     const isToday  = bk.s === todayStr;
     const isTmrw   = bk.s === tomorrowStr;
-    const nights   = nightCount(bk.s, bk.e);
+    const nights   = bkNights(bk);
     const sd = bk.s.split('-'); const ed = bk.e.split('-');
     const dayNum = parseInt(sd[2]);
     const monthAbbr = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(sd[1])-1];
@@ -2114,7 +2121,7 @@ async function liberarIcalBlock(bk){
 // ═══════════════════════════════════════════
 function openConfirmReserva(bk){
   const prop = PROPS.find(p=>p.id===bk.pid);
-  const nights = nightCount(bk.s,bk.e);
+  const nights = bkNights(bk);
   document.getElementById('cBkId').value = bk.id;
   document.getElementById('confirmInfo').innerHTML =
     `<b>${prop?prop.name:bk.pid}</b>${prop&&prop.group?' · '+prop.group:''} · ${prop?prop.dest:''}<br>
@@ -2135,10 +2142,26 @@ async function guardarConfirmReserva(){
   if(!bk) return;
   const name = document.getElementById('cName').value.trim();
   if(!name){ alert('Ingresa el nombre del huésped.'); return; }
+
+  // El bloque iCal guarda 'e' como última noche (inclusiva). Al volverlo reserva
+  // pasamos 'e' a fecha de salida (exclusiva), igual que las reservas manuales,
+  // para que el conteo de noches sea correcto en toda la app.
+  const newE = bk.type==='ical-block' ? addDaysStr(bk.e,1) : bk.e;
+
+  // Resolver conflicto ⚠️: eliminar los bloques duplicados auto-generados
+  // (iCal de otra fuente / capacidad) que se solapan con estas mismas noches.
+  // No se tocan otras reservas/bloqueos manuales para no perder datos.
+  const dups = bookings.filter(b =>
+    b.id!==id && b.pid===bk.pid &&
+    (b.type==='ical-block' || b.type==='capacity-block') &&
+    b.s<=bk.e && b.e>=bk.s
+  );
+
   const payload = {
     ...bk, id,
     type:'reservation',
     name,
+    s: bk.s, e: newE,
     phone:    document.getElementById('cPhone').value.trim(),
     income:   parseFloat(document.getElementById('cIncome').value)||0,
     platform: document.getElementById('cPlatform').value || bk.platform || '',
@@ -2149,6 +2172,7 @@ async function guardarConfirmReserva(){
   };
   try {
     await api('PUT',`/api/bookings/${id}`, payload);
+    for(const d of dups) await api('DELETE',`/api/bookings/${d.id}`);
     await refreshBookings();
     closeConfirm(); closeView(); renderCal(); updateAlerts();
     if(activeMainTab==='ops') renderOps();
@@ -2263,7 +2287,7 @@ function opsRows(){
     .filter(b => b.type==='reservation' || b.type==='ical-block')
     .map(b=>{
       const prop = PROPS.find(p=>p.id===b.pid);
-      const nights = nightCount(b.s,b.e);
+      const nights = bkNights(b);
       return {
         bk:b, prop, nights,
         confirmed: b.type==='reservation',

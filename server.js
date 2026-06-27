@@ -301,7 +301,8 @@ async function syncSourceDebug(src, dryRun = false) {
 
     for (const ev of events) {
       let s = icalDateToYmd(ev['DTSTART']);
-      let e = icalDateToYmd(ev['DTEND']);
+      const dtEndRaw = ev['DTEND'];
+      let checkout   = icalDateToYmd(dtEndRaw);   // DTEND = fecha de SALIDA (exclusiva)
       const uid     = ev['UID']     || '';
       const status  = (ev['STATUS'] || '').toUpperCase();
       const summary = ev['SUMMARY'] || '';
@@ -313,10 +314,17 @@ async function syncSourceDebug(src, dryRun = false) {
         report.steps.push({ ok: false, msg: `Saltado (sin DTSTART): uid=${uid}` });
         continue;
       }
-      if (!e) e = s;
-      const eOrig = e;
-      e = addDays(e, -1);   // DTEND es exclusivo → restar 1 día
-      if (e < s) e = s;
+      // ── Regla GLOBAL de fechas (aplica a TODAS las fuentes iCal) ──
+      // DTEND es la fecha de salida EXCLUSIVA (formato solo-fecha tipo 20260702).
+      // Si DTEND falta, o es igual/anterior a DTSTART (caso Expedia: DTSTART==DTEND,
+      // que daría 0 noches), se corrige sumando 1 día para garantizar ≥ 1 noche.
+      if (!checkout || checkout <= s) {
+        slog(`      ⚠ WARNING: DTEND inválido o igual a DTSTART (dtend=${dtEndRaw || '(vacío)'}) → +1 día para evitar 0 noches`);
+        report.steps.push({ ok: false, msg: `Corregido (0 noches → +1 día): uid=${uid} dtend=${dtEndRaw || '(vacío)'}` });
+        checkout = addDays(s, 1);
+      }
+      let e = addDays(checkout, -1);   // 'e' = última noche ocupada (inclusiva)
+      if (e < s) e = s;                // salvaguarda dura: nunca menos de 1 noche
 
       if (uid.endsWith('@detalo')) {
         slog(`      → SALTADO: UID termina en @detalo (evento propio)`);
@@ -329,7 +337,7 @@ async function syncSourceDebug(src, dryRun = false) {
         continue;
       }
 
-      slog(`      → ACEPTADO s=${s} e=${e} (DTEND ${eOrig} -1 día) pids=${pidsForUrl.join(',')}`);
+      slog(`      → ACEPTADO s=${s} e=${e} (salida ${checkout} exclusiva, -1 día) pids=${pidsForUrl.join(',')}`);
       report.steps.push({ ok: true, msg: `Aceptado: "${summary}" ${s} → ${e} pids=${pidsForUrl.join(',')}` });
 
       for (const pid of pidsForUrl) {
