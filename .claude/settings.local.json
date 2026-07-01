@@ -62,7 +62,18 @@
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const c=JSON.parse\\(d\\).filter\\(x=>x.pid==='tq6'\\);console.log\\(c.length+' conflicto\\(s\\) en tq6'\\);}\\)\")",
       "Bash(curl -s -X DELETE http://localhost:3000/api/ical-sources/62d7522d5891e166)",
       "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/2e939b9afdb911c1)",
-      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const a=JSON.parse\\(d\\);console.log\\(a.length+' bookings:',a.map\\(x=>x.pid+'/'+x.type\\).join\\(', '\\)\\);}\\)\")"
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const a=JSON.parse\\(d\\);console.log\\(a.length+' bookings:',a.map\\(x=>x.pid+'/'+x.type\\).join\\(', '\\)\\);}\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const h=fs.readFileSync\\('public/index.html','utf8'\\);const m=h.match\\(/<script>\\([\\\\s\\\\S]*\\)<\\\\/script>/\\);try{new Function\\(m[1]\\);console.log\\('index.html JS OK'\\);}catch\\(e\\){console.log\\('JS ERROR:',e.message\\);process.exit\\(1\\);}\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{JSON.parse\\(d\\).filter\\(x=>x.pid==='tq7'\\).sort\\(\\(a,b\\)=>a.s<b.s?-1:1\\).forEach\\(x=>{const n=Math.round\\(\\(new Date\\(x.e\\)-new Date\\(x.s\\)\\)/864e5\\);console.log\\(\\(x.icalUid||''\\).padEnd\\(16\\),'s='+x.s,'salida='+x.e,'noches='+n\\);}\\);}\\)\")",
+      "Bash(curl -s http://localhost:3000/api/ical/tq7.ics)",
+      "Bash(curl -s http://localhost:3000/api/ical/tq1.ics)",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/ical-sources/cf7bfb235fe66489)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{JSON.parse\\(d\\).filter\\(x=>x.pid==='tq7'&&x.type==='ical-override'\\).forEach\\(x=>console.log\\(x.id\\)\\);}\\)\")",
+      "Bash(read id *)",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/__TRACKED_VAR__)",
+      "Bash(curl -s http://localhost:3000/api/ical-sources)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>console.log\\(JSON.parse\\(d\\).length+' sources'\\)\\)\")",
+      "Bash(powershell -NonInteractive -Command 'Get-NetTCPConnection -LocalPort 4010 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }')"
     ]
   }
 }
