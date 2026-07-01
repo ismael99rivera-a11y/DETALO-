@@ -73,7 +73,17 @@
       "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/__TRACKED_VAR__)",
       "Bash(curl -s http://localhost:3000/api/ical-sources)",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>console.log\\(JSON.parse\\(d\\).length+' sources'\\)\\)\")",
-      "Bash(powershell -NonInteractive -Command 'Get-NetTCPConnection -LocalPort 4010 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }')"
+      "Bash(powershell -NonInteractive -Command 'Get-NetTCPConnection -LocalPort 4010 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }')",
+      "Bash(node -e \"const a=require\\('./data/bookings.json'\\);console.log\\(a.length+' bookings'\\);a.slice\\(0,12\\).forEach\\(b=>{const n=Math.round\\(\\(new Date\\(b.e\\)-new Date\\(b.s\\)\\)/864e5\\);console.log\\(b.type.padEnd\\(14\\),'s='+b.s,'e='+b.e,'nightsCalc='+n,'name='+\\(b.name||''\\).slice\\(0,20\\)\\);}\\);\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>console.log\\(JSON.parse\\(d\\).length+' bookings OK'\\)\\)\")",
+      "Bash(powershell -NonInteractive -Command 'Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }')",
+      "Bash(powershell -NonInteractive -Command 'Stop-Process -Id 14312 -Force -ErrorAction SilentlyContinue')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{JSON.parse\\(d\\).forEach\\(b=>console.log\\(b.pid,b.type,b.s,b.e\\)\\)}\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/bookings -H \"Content-Type: application/json\" -d '{\"pid\":\"tq1\",\"type\":\"ical-block\",\"name\":\"Bloqueado\",\"s\":\"2026-07-10\",\"e\":\"2026-07-12\",\"platform\":\"Airbnb\",\"source\":\"ical\",\"sourceId\":\"testsrc\",\"icalUid\":\"test-uid-123\",\"notes\":\"Importado de Airbnb\"}')",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\);console.log\\('seeded ical-block',b.id,b.s,'->',b.e\\)}\\)\")",
+      "Bash(node -e \"const s=require\\('./data/ical-sources.json'\\);console.log\\(s.length+' sources'\\);s.forEach\\(x=>console.log\\(x.id,x.platform,\\(x.propIds||[x.propId]\\).join\\(','\\),x.url\\)\\)\")",
+      "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/d5a8739273359566)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\);console.log\\('re-seeded',b.id\\)}\\)\")"
     ]
   }
 }

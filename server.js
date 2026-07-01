@@ -52,6 +52,10 @@ const PROP_NAMES = {
 
 // ── MIDDLEWARE ───────────────────────────────────────────
 app.use(express.json());
+// Las respuestas de la API nunca deben cachearse: tras confirmar/editar una
+// reserva el cliente debe recibir la lista fresca (si no, el calendario muestra
+// el color anterior hasta recargar la página).
+app.use('/api', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 app.use(express.static(PUBLIC_DIR));
 
 // ── HELPERS ──────────────────────────────────────────────

@@ -124,21 +124,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dc.capblk.bk-end{border-right-color:var(--cap-bdr)}
 .dc.freebk.bk-end{border-right-color:var(--free-bdr)}
 
-/* ── DÍA DE SALIDA (checkout): solo mitad izquierda coloreada ── */
-/* El huésped se va ese día: mañana ocupada (mitad izq.), tarde/noche libre (mitad der.) */
-.dc.checkout-half{position:relative;background:#fff}
-.dc.checkout-half.wknd{background:#fafafe}
-.dc.checkout-half.today-col{background:#f0f9ff}
-.dc.checkout-half:hover{background:#f0f9ff}
-.dc.checkout-half::before{content:'';position:absolute;top:0;bottom:0;left:0;width:50%;pointer-events:none}
-.dc.checkout-half.co-res::before{background:var(--res-bg)}
-.dc.checkout-half.co-blk::before{background:var(--blk-bg)}
-.dc.checkout-half.co-ical::before{background:var(--ical-bg)}
-html.dark .dc.checkout-half{background:#0f172a}
-html.dark .dc.checkout-half.wknd{background:#131e2e}
-html.dark .dc.checkout-half.today-col{background:#0c2340}
-html.dark .dc.checkout-half:hover{background:#1e293b}
-
 .bk-label{position:absolute;top:50%;left:5px;right:3px;transform:translateY(-50%);font-size:.66rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;line-height:1}
 .bk-label.r{color:var(--res-fg)}.bk-label.b{color:var(--blk-fg)}.bk-label.ic{color:var(--ical-fg)}.bk-label.cap{color:var(--cap-fg)}.bk-label.free{color:var(--free-fg)}
 
@@ -977,7 +962,9 @@ function fmtTime(iso){ return iso?new Date(iso).toLocaleTimeString('es-MX',{hour
 // API
 // ═══════════════════════════════════════════
 async function api(method, path, body) {
-  const opts = { method, headers:{} };
+  // no-store: evita que el navegador sirva una lista de reservas en caché tras
+  // confirmar/editar (el calendario mostraría el color anterior hasta recargar).
+  const opts = { method, headers:{}, cache:'no-store' };
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
@@ -994,21 +981,22 @@ async function refreshBookings() {
 // ═══════════════════════════════════════════
 // LÓGICA DE RESERVAS
 // ═══════════════════════════════════════════
+// 'e' = fecha de salida (DTEND, exclusiva). Noches ocupadas = [s, e): el día de
+// salida NO se ocupa y queda libre para nuevos check-ins. Un bloqueo de 1 solo
+// día se guarda con s===e y ocupa únicamente ese día (salida efectiva = s+1).
+function bkEndExcl(bk){ return bk.e>bk.s ? bk.e : addDaysStr(bk.s,1); }
 function bkForCell(pid,y,m,d){
   const ds=dStr(y,m,d);
-  const matches=bookings.filter(b=>b.pid===pid&&ds>=b.s&&ds<=b.e);
-  if(!matches.length) return null;
-  // Reservas consecutivas: si un día es salida de una (ds===e) y entrada de
-  // otra (ds===s), la noche la ocupa la que llega → priorizarla sobre el checkout.
-  return matches.find(b=>ds<b.e) || matches[0];
+  return bookings.find(b=>b.pid===pid&&ds>=b.s&&ds<bkEndExcl(b))||null;
 }
 function isFirst(bk,y,m,d){
   const ds=dStr(y,m,d),ms=dStr(y,m,1);
   return bk.s===ds||(d===1&&bk.s<ms);
 }
 function isLast(bk,y,m,d){
-  const ds=dStr(y,m,d),total=daysInMonth(y,m),me=dStr(y,m,total);
-  return bk.e===ds||(d===total&&bk.e>me);
+  const ds=dStr(y,m,d);
+  // Última noche ocupada = salida (exclusiva) − 1 día.
+  return addDaysStr(bkEndExcl(bk),-1)===ds;
 }
 function hasOverlap(pid,s,e,excId){
   return bookings.some(b=>{
@@ -1078,16 +1066,10 @@ function renderCal(){
           const isIcal=bk.type==='ical-block';
           const isCap=bk.type==='capacity-block';
           const isFree=bk.type==='ical-override';
-          // Día de salida: reservas y bloqueos manuales guardan 'e' = fecha de
-          // salida → ese día solo se pinta la mitad izquierda (checkout).
-          const isCheckout=(isRes||isIcal||bk.type==='block') && ds===bk.e && ds!==bk.s;
-          if(isCheckout){
-            cls+=' checkout-half '+(isRes?'co-res':isIcal?'co-ical':'co-blk');
-          } else {
-            cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
-            if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
-            if(isLast(bk,curY,curM,d))  cls+=' bk-end';
-          }
+          // Noches ocupadas [s, e): el día de salida (e) no se pinta y queda libre.
+          cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
+          if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
+          if(isLast(bk,curY,curM,d))  cls+=' bk-end';
           if(isFirst(bk,curY,curM,d)){
             const txt=isRes?(bk.name||'Sin nombre'):isIcal?(bk.platform?`🔗 ${bk.platform}`:'iCal'):isCap?'Capacidad':isFree?'Libre':'Bloqueado';
             const cc=isRes?'r':isIcal?'ic':isCap?'cap':isFree?'free':'b';
@@ -2202,7 +2184,8 @@ async function guardarConfirmReserva(){
   };
   try {
     await api('PUT',`/api/bookings/${id}`, payload);
-    for(const d of dups) await api('DELETE',`/api/bookings/${d.id}`);
+    // Borrar duplicados en paralelo; un fallo aislado no debe impedir refrescar/redibujar.
+    await Promise.allSettled(dups.map(d=>api('DELETE',`/api/bookings/${d.id}`)));
     await refreshBookings();
     closeConfirm(); closeView(); renderCal(); updateAlerts();
     if(activeMainTab==='ops') renderOps();
