@@ -154,7 +154,10 @@ function buildIcal(propId, allBookings, allSources) {
     if (bk.type === 'capacity-block') continue; // los capacity-blocks son internos
     if (bk.type === 'ical-block' && overrides.some(o => bk.s >= o.s && bk.e <= o.e)) continue;
     const dtS = bk.s.replace(/-/g,'');
-    const dtE = addDays(bk.e, 1).replace(/-/g,''); // DTEND exclusivo
+    // 'e' ya es la fecha de salida (DTEND exclusiva). Se garantiza DTEND > DTSTART
+    // para bloqueos de un solo día (s===e), que de otro modo darían un evento vacío.
+    const co  = bk.e > bk.s ? bk.e : addDays(bk.s, 1);
+    const dtE = co.replace(/-/g,'');
     const sum = bk.type === 'reservation' ? esc(bk.name || 'Reserva') : 'BLOCKED';
     lines.push('BEGIN:VEVENT',
       `UID:${bk.id}@detalo`,
@@ -323,8 +326,10 @@ async function syncSourceDebug(src, dryRun = false) {
         report.steps.push({ ok: false, msg: `Corregido (0 noches → +1 día): uid=${uid} dtend=${dtEndRaw || '(vacío)'}` });
         checkout = addDays(s, 1);
       }
-      let e = addDays(checkout, -1);   // 'e' = última noche ocupada (inclusiva)
-      if (e < s) e = s;                // salvaguarda dura: nunca menos de 1 noche
+      // 'e' = fecha de SALIDA (DTEND, exclusiva). Las noches ocupadas son [s, e):
+      // desde DTSTART hasta e-1 inclusive. noches = e - s. El día de salida (e)
+      // nunca cuenta como noche ocupada (ni en calendario ni en el iCal de salida).
+      let e = checkout;
 
       if (uid.endsWith('@detalo')) {
         slog(`      → SALTADO: UID termina en @detalo (evento propio)`);
@@ -337,8 +342,9 @@ async function syncSourceDebug(src, dryRun = false) {
         continue;
       }
 
-      slog(`      → ACEPTADO s=${s} e=${e} (salida ${checkout} exclusiva, -1 día) pids=${pidsForUrl.join(',')}`);
-      report.steps.push({ ok: true, msg: `Aceptado: "${summary}" ${s} → ${e} pids=${pidsForUrl.join(',')}` });
+      const nn = Math.round((new Date(e) - new Date(s)) / 864e5);
+      slog(`      → ACEPTADO s=${s} salida=${e} (${nn} noche${nn!==1?'s':''}) pids=${pidsForUrl.join(',')}`);
+      report.steps.push({ ok: true, msg: `Aceptado: "${summary}" ${s} → ${e} (${nn} noches) pids=${pidsForUrl.join(',')}` });
 
       for (const pid of pidsForUrl) {
         const blk = {
@@ -407,8 +413,8 @@ function computeVLPCapacityBlocks(bookings, sources) {
   const occ = new Map();
   for (const bk of vlpBks) {
     let d = new Date(bk.s + 'T12:00:00Z');
-    const z = new Date(bk.e + 'T12:00:00Z');
-    while (d <= z) {
+    const z = new Date(bk.e + 'T12:00:00Z');   // salida (exclusiva)
+    while (d < z) {   // noches ocupadas [s, e): el día de salida no ocupa
       const ds = d.toISOString().slice(0, 10);
       if (!occ.has(ds)) occ.set(ds, new Set());
       occ.get(ds).add(bk.pid);
@@ -613,7 +619,9 @@ function findConflicts(bookings) {
     for (let j = i + 1; j < relevant.length; j++) {
       const a = relevant[i], b = relevant[j];
       if (a.pid !== b.pid) continue;
-      if (!(a.s <= b.e && a.e >= b.s)) continue;
+      // Solape de noches ocupadas [s, e) (e = salida exclusiva). Reservas
+      // consecutivas (salida de una == entrada de otra) NO son conflicto.
+      if (!(a.s < b.e && b.s < a.e)) continue;
       const key = [a.id, b.id].sort().join('|');
       if (seen.has(key)) continue;
       seen.add(key);

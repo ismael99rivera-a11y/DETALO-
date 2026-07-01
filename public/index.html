@@ -133,6 +133,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dc.checkout-half::before{content:'';position:absolute;top:0;bottom:0;left:0;width:50%;pointer-events:none}
 .dc.checkout-half.co-res::before{background:var(--res-bg)}
 .dc.checkout-half.co-blk::before{background:var(--blk-bg)}
+.dc.checkout-half.co-ical::before{background:var(--ical-bg)}
 html.dark .dc.checkout-half{background:#0f172a}
 html.dark .dc.checkout-half.wknd{background:#131e2e}
 html.dark .dc.checkout-half.today-col{background:#0c2340}
@@ -967,7 +968,8 @@ function nightCount(s,e){ return(!s||!e)?0:Math.round((new Date(e)-new Date(s))/
 // El resto (reservas manuales) guardan 'e' = fecha de salida → nightCount directo.
 function bkNights(bk){
   if(!bk||!bk.s||!bk.e) return 0;
-  return bk.type==='ical-block' ? nightCount(bk.s,bk.e)+1 : nightCount(bk.s,bk.e);
+  // 'e' es la fecha de salida (exclusiva) en todos los tipos → noches = e - s
+  return nightCount(bk.s,bk.e);
 }
 function fmtTime(iso){ return iso?new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):''; }
 
@@ -994,7 +996,11 @@ async function refreshBookings() {
 // ═══════════════════════════════════════════
 function bkForCell(pid,y,m,d){
   const ds=dStr(y,m,d);
-  return bookings.find(b=>b.pid===pid&&ds>=b.s&&ds<=b.e)||null;
+  const matches=bookings.filter(b=>b.pid===pid&&ds>=b.s&&ds<=b.e);
+  if(!matches.length) return null;
+  // Reservas consecutivas: si un día es salida de una (ds===e) y entrada de
+  // otra (ds===s), la noche la ocupa la que llega → priorizarla sobre el checkout.
+  return matches.find(b=>ds<b.e) || matches[0];
 }
 function isFirst(bk,y,m,d){
   const ds=dStr(y,m,d),ms=dStr(y,m,1);
@@ -1009,7 +1015,8 @@ function hasOverlap(pid,s,e,excId){
     if(b.pid!==pid) return false;
     if(excId&&b.id===excId) return false;
     if(b.type==='capacity-block') return false; // los manuales pueden sobreponerse
-    return s<=b.e&&e>=b.s;
+    // Solape de noches ocupadas [s, e). Entrada == salida ajena NO se solapa.
+    return s<b.e && b.s<e;
   });
 }
 
@@ -1073,9 +1080,9 @@ function renderCal(){
           const isFree=bk.type==='ical-override';
           // Día de salida: reservas y bloqueos manuales guardan 'e' = fecha de
           // salida → ese día solo se pinta la mitad izquierda (checkout).
-          const isCheckout=(isRes||bk.type==='block') && ds===bk.e && ds!==bk.s;
+          const isCheckout=(isRes||isIcal||bk.type==='block') && ds===bk.e && ds!==bk.s;
           if(isCheckout){
-            cls+=' checkout-half '+(isRes?'co-res':'co-blk');
+            cls+=' checkout-half '+(isRes?'co-res':isIcal?'co-ical':'co-blk');
           } else {
             cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
             if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
@@ -1539,13 +1546,14 @@ function getConflictPids(){
     for(let j=i+1;j<relevant.length;j++){
       const a=relevant[i], b=relevant[j];
       if(a.pid!==b.pid) continue;
-      if(!(a.s<=b.e && a.e>=b.s)) continue;
-      // Marcar todas las celdas en el rango de solapamiento
-      const os = a.s > b.s ? a.s : b.s;
-      const oe = a.e < b.e ? a.e : b.e;
+      // Solape de noches ocupadas [s, e) (e = salida exclusiva). Consecutivas no chocan.
+      if(!(a.s<b.e && b.s<a.e)) continue;
+      // Marcar las celdas de noches solapadas [os, oe)
+      const os = a.s > b.s ? a.s : b.s;   // inicio del solape (inclusivo)
+      const oe = a.e < b.e ? a.e : b.e;   // fin del solape (exclusivo)
       let d = new Date(os+'T12:00:00Z');
       const end = new Date(oe+'T12:00:00Z');
-      while(d<=end){
+      while(d<end){
         result.add(a.pid+'|'+d.toISOString().slice(0,10));
         d.setUTCDate(d.getUTCDate()+1);
       }
@@ -1767,16 +1775,17 @@ function openStatsPanel(pid, anchorEl){
   // Bloqueos del mes actual para esta propiedad
   const moBookings = bookings.filter(b =>
     b.pid===pid && b.type!=='capacity-block' && b.type!=='ical-override' &&
-    b.s<=moEnd && b.e>=moStart
+    b.s<=moEnd && b.e>moStart
   );
 
   // Noches ocupadas este mes
   let nightsOcc = 0;
   const counted = new Set();
+  const moEndDate = new Date(moEnd);
   for(const bk of moBookings){
     let d = new Date(Math.max(new Date(bk.s),new Date(moStart)));
-    const eDate = new Date(Math.min(new Date(bk.e),new Date(moEnd)));
-    while(d<=eDate){ const ds=d.toISOString().slice(0,10); if(!counted.has(ds)){counted.add(ds);nightsOcc++;} d.setDate(d.getDate()+1); }
+    const endExcl = new Date(bk.e);   // salida (exclusiva): no cuenta como noche
+    while(d<=moEndDate && d<endExcl){ const ds=d.toISOString().slice(0,10); if(!counted.has(ds)){counted.add(ds);nightsOcc++;} d.setDate(d.getDate()+1); }
   }
   const pct = Math.round(nightsOcc/daysInMo*100);
 
@@ -2124,17 +2133,22 @@ async function guardarMultiBlock(){
 async function liberarIcalBlock(bk){
   const prop=PROPS.find(p=>p.id===bk.pid);
   const label=bk.name||bk.platform||'iCal';
-  if(!confirm(`¿Liberar "${label}" (${fmtDate(bk.s)} – ${fmtDate(bk.e)}) en ${prop?prop.name:bk.pid}?\n\nSe crea un override que marca estas fechas como disponibles en el iCal de salida.`)) return;
+  if(!confirm(`¿Liberar "${label}" (${fmtDate(bk.s)} – ${fmtDate(bk.e)}) en ${prop?prop.name:bk.pid}?\n\nSe libera de inmediato y se marca como disponible en el iCal de salida.`)) return;
   try {
+    // 1) Override persistente: evita que el próximo sync reimporte el bloque.
     await api('POST','/api/bookings',{
       pid:bk.pid, type:'ical-override',
       name:'Override manual', phone:'', s:bk.s, e:bk.e,
       income:0, platform:'', notes:`Libera: ${label}`,
     });
+    // 2) Eliminar el bloque iCal AHORA para que desaparezca sin recargar.
+    //    (El sync recreará el bloque, pero el override lo volverá a suprimir.)
+    await api('DELETE',`/api/bookings/${bk.id}`);
     await refreshBookings();
     closeView();
     renderCal();
-  } catch(err){ alert('Error al crear override: '+err.message); }
+    updateAlerts();
+  } catch(err){ alert('Error al liberar: '+err.message); }
 }
 
 // ═══════════════════════════════════════════
@@ -2164,25 +2178,20 @@ async function guardarConfirmReserva(){
   const name = document.getElementById('cName').value.trim();
   if(!name){ alert('Ingresa el nombre del huésped.'); return; }
 
-  // El bloque iCal guarda 'e' como última noche (inclusiva). Al volverlo reserva
-  // pasamos 'e' a fecha de salida (exclusiva), igual que las reservas manuales,
-  // para que el conteo de noches sea correcto en toda la app.
-  const newE = bk.type==='ical-block' ? addDaysStr(bk.e,1) : bk.e;
-
   // Resolver conflicto ⚠️: eliminar los bloques duplicados auto-generados
   // (iCal de otra fuente / capacidad) que se solapan con estas mismas noches.
   // No se tocan otras reservas/bloqueos manuales para no perder datos.
   const dups = bookings.filter(b =>
     b.id!==id && b.pid===bk.pid &&
     (b.type==='ical-block' || b.type==='capacity-block') &&
-    b.s<=bk.e && b.e>=bk.s
+    b.s < bk.e && bk.s < b.e
   );
 
   const payload = {
     ...bk, id,
     type:'reservation',
     name,
-    s: bk.s, e: newE,
+    s: bk.s, e: bk.e,   // 'e' ya es la fecha de salida (exclusiva)
     phone:    document.getElementById('cPhone').value.trim(),
     income:   parseFloat(document.getElementById('cIncome').value)||0,
     platform: document.getElementById('cPlatform').value || bk.platform || '',
@@ -2359,7 +2368,7 @@ function renderOps(){
 
   // ── Contadores ──
   const confirmed = bookings.filter(b=>b.type==='reservation');
-  const resHoy   = confirmed.filter(b=>b.s<=todayStr && b.e>=todayStr).length;
+  const resHoy   = confirmed.filter(b=>b.s<=todayStr && b.e>todayStr).length;
   const checkinsManana = confirmed.filter(b=>b.s===tmrwStr).length;
 
   const y=today.getFullYear(), m=today.getMonth();
@@ -2367,11 +2376,12 @@ function renderOps(){
   const moStart=`${y}-${pad2(m+1)}-01`, moEnd=`${y}-${pad2(m+1)}-${pad2(daysInMo)}`;
   // Ocupación: noches ocupadas (reserva/ical-block/block) / (propiedades × días del mes)
   const occ = new Set();
-  bookings.filter(b=>['reservation','ical-block','block'].includes(b.type) && b.s<=moEnd && b.e>=moStart)
+  const moEndDate=new Date(moEnd);
+  bookings.filter(b=>['reservation','ical-block','block'].includes(b.type) && b.s<=moEnd && b.e>moStart)
     .forEach(b=>{
       let d=new Date(Math.max(new Date(b.s),new Date(moStart)));
-      const eD=new Date(Math.min(new Date(b.e),new Date(moEnd)));
-      while(d<=eD){ occ.add(b.pid+'|'+d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+      const endExcl=new Date(b.e);   // salida (exclusiva): no cuenta como noche
+      while(d<=moEndDate && d<endExcl){ occ.add(b.pid+'|'+d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
     });
   const occPct = Math.round(occ.size/(PROPS.length*daysInMo)*100);
   const ingresoMes = confirmed.filter(b=>b.s>=moStart&&b.s<=moEnd).reduce((s,b)=>s+(b.income||0),0);
