@@ -774,9 +774,35 @@ app.get('/api/alerts', (_req, res) => {
 // ── FALLBACK ─────────────────────────────────────────────
 app.get('*', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
 
+// ── MIGRACIÓN: reservas confirmadas → verde ──────────────
+// Reservas con huésped capturado que aún coexisten con su bloque-espejo de iCal
+// se muestran en amarillo (conflicto). Al arrancar se eliminan esos ical-block
+// duplicados (misma unidad, fechas solapadas) para que la reserva quede verde.
+function migrateConfirmedReservations() {
+  const list = readJSON(BOOKINGS_F, []);
+  const endExcl = b => (b.e > b.s ? b.e : addDays(b.s, 1)); // salida exclusiva; bloque de 1 día
+  const reservations = list.filter(b =>
+    b.type === 'reservation' && (b.name || '').trim() && b.s && b.e);
+  if (!reservations.length) return;
+
+  const removeIds = new Set();
+  for (const blk of list) {
+    if (blk.type !== 'ical-block' || !blk.s || !blk.e) continue;
+    // Solape de noches [s, e) con alguna reserva con huésped de la misma unidad.
+    const dup = reservations.some(r =>
+      r.pid === blk.pid && r.s < endExcl(blk) && blk.s < endExcl(r));
+    if (dup) removeIds.add(blk.id);
+  }
+  if (!removeIds.size) return;
+
+  writeJSON(BOOKINGS_F, list.filter(b => !removeIds.has(b.id)));
+  console.log(`🔄  Migración: ${removeIds.size} bloque(s) iCal duplicado(s) eliminado(s) (reservas con huésped → verde)`);
+}
+
 // ── START ─────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🏡  Detalo v2  →  http://localhost:${PORT}\n`);
+  migrateConfirmedReservations();                                  // migración al arrancar
   setTimeout(() => syncAll().catch(console.error), 3000);          // sync al arrancar
   setInterval(() => syncAll().catch(console.error), 5 * 60 * 1000); // cada 5 min
 });

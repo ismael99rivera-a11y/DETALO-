@@ -85,7 +85,10 @@
       "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/d5a8739273359566)",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\);console.log\\('re-seeded',b.id\\)}\\)\")",
       "Bash(curl -s -X POST http://localhost:3000/api/bookings -H \"Content-Type: application/json\" -d '{\"pid\":\"tq3\",\"type\":\"ical-override\",\"name\":\"Override\",\"s\":\"2026-08-01\",\"e\":\"2026-08-05\"}')",
-      "Bash(curl -s http://localhost:3000/api/ical/tq3.ics)"
+      "Bash(curl -s http://localhost:3000/api/ical/tq3.ics)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{JSON.parse\\(d\\).filter\\(b=>b.pid==='tq4'\\).forEach\\(b=>console.log\\(' ',b.type,b.name\\)\\)}\\)\")",
+      "Bash(curl -s http://localhost:3000/api/ical/tq4.ics)",
+      "Bash(curl -s http://localhost:3000/api/ical/tq8.ics)"
     ]
   }
 }

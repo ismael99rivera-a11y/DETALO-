@@ -150,6 +150,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .di label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:3px}
 .di .val{font-size:.88rem;font-weight:600;color:#1e293b}
 .di.full{grid-column:1/-1}
+.edit-fechas{margin-top:16px;padding-top:16px;border-top:1px dashed #cbd5e1}
+html.dark .edit-fechas{border-top-color:#334155}
 
 /* ── FORM ── */
 .fg{margin-bottom:14px}
@@ -667,6 +669,8 @@ html.dark .prices-tbl input[type=number]:disabled{background:#1e293b;color:#4755
     <div class="mfoot" id="viewFoot">
       <button class="btn btn-confirm" id="btnConfirmar" style="display:none">✅ Confirmar reserva</button>
       <button class="btn btn-warn" id="btnLiberar" style="display:none">Liberar fechas</button>
+      <button class="btn btn-sec" id="btnEditFechas" style="display:none">✏️ Editar fechas</button>
+      <button class="btn btn-pri" id="btnGuardarFechas" style="display:none">💾 Guardar fechas</button>
       <button class="btn btn-del" id="btnDel">Eliminar</button>
       <button class="btn btn-sec" id="btnViewCerrar">Cerrar</button>
     </div>
@@ -1154,6 +1158,13 @@ function openView(id){
     <div class="di"><label>Plataforma</label><div class="val">${bk.platform||'—'}</div></div>`;
   if(bk.notes&&!isFree) h+=`<div class="di full"><label>Notas</label><div class="val">${bk.notes}</div></div>`;
   h+='</div>';
+  // Edición de fechas (oculto por defecto; lo muestra "Editar fechas")
+  h+=`<div id="editFechasBox" class="edit-fechas" style="display:none">
+    <div class="frow">
+      <div class="fg"><label>Nueva entrada</label><input type="date" id="edStart"></div>
+      <div class="fg"><label>Nueva salida</label><input type="date" id="edEnd"></div>
+    </div>
+  </div>`;
   document.getElementById('viewBody').innerHTML=h;
   const btnDel=document.getElementById('btnDel');
   const btnLib=document.getElementById('btnLiberar');
@@ -1162,9 +1173,38 @@ function openView(id){
   btnDel.textContent   = isFree ? 'Eliminar override' : 'Eliminar';
   btnLib.style.display = isIcal ? '' : 'none';
   btnConf.style.display = isIcal ? '' : 'none';
+  // Editar fechas: reservas, bloqueos iCal y bloqueos de dueño (no capacidad ni override)
+  document.getElementById('btnEditFechas').style.display = (isRes||isIcal||bk.type==='block') ? '' : 'none';
+  document.getElementById('btnGuardarFechas').style.display = 'none';
   document.getElementById('viewOv').classList.add('on');
 }
 function closeView(){ document.getElementById('viewOv').classList.remove('on'); activeId=null; }
+
+// ── EDITAR FECHAS (desde el modal de detalle) ──
+function toggleEditFechas(){
+  const bk=bookings.find(b=>b.id===activeId); if(!bk) return;
+  const box=document.getElementById('editFechasBox');
+  const btnSave=document.getElementById('btnGuardarFechas');
+  const showing=box.style.display!=='none';
+  if(showing){ box.style.display='none'; btnSave.style.display='none'; return; }
+  document.getElementById('edStart').value=bk.s;
+  document.getElementById('edEnd').value=bk.e;
+  box.style.display=''; btnSave.style.display='';
+}
+async function guardarFechas(){
+  const bk=bookings.find(b=>b.id===activeId); if(!bk) return;
+  const s=document.getElementById('edStart').value;
+  const e=document.getElementById('edEnd').value;
+  if(!s||!e){ alert('Ingresa la entrada y la salida.'); return; }
+  if(s>e){ alert('La salida debe ser posterior a la entrada.'); return; }
+  if(hasOverlap(bk.pid,s,e,bk.id)){ alert('Esas fechas se solapan con otra reserva o bloqueo en esta unidad.'); return; }
+  try{
+    await api('PUT',`/api/bookings/${bk.id}`,{...bk,s,e});
+    await refreshBookings();
+    renderCal(); updateAlerts();
+    openView(bk.id); // reabrir con las fechas actualizadas
+  }catch(err){ alert('Error al actualizar las fechas: '+err.message); }
+}
 
 // ═══════════════════════════════════════════
 // MODAL FORMULARIO
@@ -2711,6 +2751,8 @@ async function init(){
   document.getElementById('btnConfirmar').addEventListener('click',()=>{
     if(activeId){ const bk=bookings.find(b=>b.id===activeId); if(bk) openConfirmReserva(bk); }
   });
+  document.getElementById('btnEditFechas').addEventListener('click',toggleEditFechas);
+  document.getElementById('btnGuardarFechas').addEventListener('click',guardarFechas);
 
   // Modal confirmar reserva
   document.getElementById('confirmClose').addEventListener('click',closeConfirm);
