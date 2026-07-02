@@ -987,7 +987,18 @@ async function refreshBookings() {
 function bkEndExcl(bk){ return bk.e>bk.s ? bk.e : addDaysStr(bk.s,1); }
 function bkForCell(pid,y,m,d){
   const ds=dStr(y,m,d);
-  return bookings.find(b=>b.pid===pid&&ds>=b.s&&ds<bkEndExcl(b))||null;
+  const onDay=bookings.filter(b=>b.pid===pid&&ds>=b.s&&ds<bkEndExcl(b));
+  if(!onDay.length) return null;
+  // Prioridad de pintado:
+  // 1) Una reserva confirmada (booking) SIEMPRE manda → verde, sin importar que
+  //    coexista su bloque-espejo de iCal.
+  const res=onDay.find(b=>b.type==='reservation'); if(res) return res;
+  // 2) Bloqueo manual del dueño: se respeta aunque haya override.
+  const manual=onDay.find(b=>b.type==='block'); if(manual) return manual;
+  // 3) Día liberado por override → libre y clickeable para nuevas reservas.
+  if(onDay.some(b=>b.type==='ical-override')) return null;
+  // 4) Resto: bloqueo iCal / capacidad.
+  return onDay.find(b=>b.type==='ical-block') || onDay.find(b=>b.type==='capacity-block') || onDay[0];
 }
 function isFirst(bk,y,m,d){
   const ds=dStr(y,m,d),ms=dStr(y,m,1);
@@ -1003,6 +1014,7 @@ function hasOverlap(pid,s,e,excId){
     if(b.pid!==pid) return false;
     if(excId&&b.id===excId) return false;
     if(b.type==='capacity-block') return false; // los manuales pueden sobreponerse
+    if(b.type==='ical-override') return false;   // día liberado: se puede reservar
     // Solape de noches ocupadas [s, e). Entrada == salida ajena NO se solapa.
     return s<b.e && b.s<e;
   });
@@ -1528,6 +1540,10 @@ function getConflictPids(){
     for(let j=i+1;j<relevant.length;j++){
       const a=relevant[i], b=relevant[j];
       if(a.pid!==b.pid) continue;
+      // Reserva vs bloqueo NO es conflicto: la reserva confirmada manda (verde) y
+      // el bloque es solo su espejo provisional. Sí se marcan reserva-vs-reserva
+      // (doble reserva real) y bloqueo-vs-bloqueo (doble disponibilidad).
+      if((a.type==='reservation') !== (b.type==='reservation')) continue;
       // Solape de noches ocupadas [s, e) (e = salida exclusiva). Consecutivas no chocan.
       if(!(a.s<b.e && b.s<a.e)) continue;
       // Marcar las celdas de noches solapadas [os, oe)

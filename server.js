@@ -151,28 +151,49 @@ function buildIcal(propId, allBookings, allSources) {
     `X-WR-CALNAME:Detalo - ${esc(name)}`,
     'X-WR-TIMEZONE:America/Mexico_City',
   ];
-  const overrides = allBookings.filter(b => b.type === 'ical-override' && b.pid === propId);
+  // Días liberados por overrides manuales (Set de YYYY-MM-DD). Airbnb debe leerlos
+  // como disponibles, así que se restan de los bloqueos exportados (día por día,
+  // para soportar overrides parciales dentro de un bloqueo más largo).
+  const freeDays = new Set();
+  for (const o of allBookings.filter(b => b.type === 'ical-override' && b.pid === propId)) {
+    if (!o.s || !o.e) continue;
+    const oEnd = o.e > o.s ? o.e : addDays(o.s, 1);
+    for (let d = o.s; d < oEnd; d = addDays(d, 1)) freeDays.add(d);
+  }
   for (const bk of allBookings.filter(b => b.pid === propId)) {
     if (!bk.s || !bk.e) continue;
     if (bk.type === 'ical-override') continue;
     if (bk.type === 'capacity-block') continue; // los capacity-blocks son internos
-    if (bk.type === 'ical-block' && overrides.some(o => bk.s >= o.s && bk.e <= o.e)) continue;
-    const dtS = bk.s.replace(/-/g,'');
     // 'e' ya es la fecha de salida (DTEND exclusiva). Se garantiza DTEND > DTSTART
     // para bloqueos de un solo día (s===e), que de otro modo darían un evento vacío.
     const co  = bk.e > bk.s ? bk.e : addDays(bk.s, 1);
-    const dtE = co.replace(/-/g,'');
     const sum = bk.type === 'reservation' ? esc(bk.name || 'Reserva') : 'BLOCKED';
-    lines.push('BEGIN:VEVENT',
-      `UID:${bk.id}@detalo`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${dtS}`,
-      `DTEND;VALUE=DATE:${dtE}`,
-      `SUMMARY:${sum}`,
-      'STATUS:CONFIRMED');
-    if (bk.type === 'reservation' && bk.platform)
-      lines.push(`DESCRIPTION:Plataforma: ${esc(bk.platform)}`);
-    lines.push('END:VEVENT');
+    // Reservas: se exportan íntegras. Bloqueos: se recortan los días liberados por
+    // override, emitiendo los tramos contiguos que sigan bloqueados.
+    let ranges;
+    if (bk.type === 'reservation') {
+      ranges = [[bk.s, co]];
+    } else {
+      ranges = [];
+      let curStart = null;
+      for (let d = bk.s; d < co; d = addDays(d, 1)) {
+        if (freeDays.has(d)) { if (curStart) { ranges.push([curStart, d]); curStart = null; } }
+        else if (!curStart) curStart = d;
+      }
+      if (curStart) ranges.push([curStart, co]);
+    }
+    ranges.forEach(([rs, re], i) => {
+      lines.push('BEGIN:VEVENT',
+        `UID:${bk.id}${i ? '-' + i : ''}@detalo`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${rs.replace(/-/g,'')}`,
+        `DTEND;VALUE=DATE:${re.replace(/-/g,'')}`,
+        `SUMMARY:${sum}`,
+        'STATUS:CONFIRMED');
+      if (bk.type === 'reservation' && bk.platform)
+        lines.push(`DESCRIPTION:Plataforma: ${esc(bk.platform)}`);
+      lines.push('END:VEVENT');
+    });
   }
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');

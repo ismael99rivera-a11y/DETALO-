@@ -83,7 +83,9 @@
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\);console.log\\('seeded ical-block',b.id,b.s,'->',b.e\\)}\\)\")",
       "Bash(node -e \"const s=require\\('./data/ical-sources.json'\\);console.log\\(s.length+' sources'\\);s.forEach\\(x=>console.log\\(x.id,x.platform,\\(x.propIds||[x.propId]\\).join\\(','\\),x.url\\)\\)\")",
       "Bash(curl -s -X DELETE http://localhost:3000/api/bookings/d5a8739273359566)",
-      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\);console.log\\('re-seeded',b.id\\)}\\)\")"
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{const b=JSON.parse\\(d\\);console.log\\('re-seeded',b.id\\)}\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/bookings -H \"Content-Type: application/json\" -d '{\"pid\":\"tq3\",\"type\":\"ical-override\",\"name\":\"Override\",\"s\":\"2026-08-01\",\"e\":\"2026-08-05\"}')",
+      "Bash(curl -s http://localhost:3000/api/ical/tq3.ics)"
     ]
   }
 }
