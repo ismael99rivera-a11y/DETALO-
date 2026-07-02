@@ -505,16 +505,26 @@ async function _doSync() {
   // Limpiar capacity-blocks anteriores; se recalcularán al final
   bookings = bookings.filter(b => b.type !== 'capacity-block');
   const updatedSources = [];
+  // Para detección de cancelaciones: UIDs presentes en cada iCal descargado OK.
+  const okSourceIds = new Set();
+  const seenUidsBySource = new Map();
+  const seenUidsAll = new Set();
   for (const src of sources) {
     slog(`\nFuente: ${src.platform || '(sin plataforma)'} | propIds: ${(src.propIds||[src.propId]).join(',')}`);
     const { updated, blocks } = await syncSource(src);
     bookings = bookings.filter(b => !(b.source === 'ical' && b.sourceId === src.id));
     bookings.push(...blocks);
     updatedSources.push(updated);
-    if (updated.lastStatus === 'ok')
+    if (updated.lastStatus === 'ok') {
+      // Sólo las fuentes descargadas por completo son fiables para detectar bajas.
+      okSourceIds.add(src.id);
+      const set = new Set();
+      for (const b of blocks) if (b.icalUid) { set.add(b.icalUid); seenUidsAll.add(b.icalUid); }
+      seenUidsBySource.set(src.id, set);
       slog(`  ✓ ${src.platform || src.propId}: ${updated.importedCount} bloques guardados`);
-    else
+    } else {
       slog(`  ✗ ${src.propId}: ${updated.lastError}`);
+    }
   }
   // Limpiar ical-blocks huérfanos (cuya fuente ya no existe)
   bookings = cleanOrphans(bookings, updatedSources);
@@ -545,6 +555,45 @@ async function _doSync() {
     const suppressed = before - bookings.length;
     if (suppressed > 0) slog(`[Overrides] ${suppressed} bloque(s) iCal suprimidos por override manual`);
   }
+  // ── Detección de posibles cancelaciones ──────────────────
+  // Reservas confirmadas que vinieron de iCal externo (conservan icalUid). Si su
+  // UID ya no aparece en el iCal de origen (fuente descargada OK), la reserva fue
+  // cancelada en la plataforma. NUNCA se elimina: sólo se MARCA para que el
+  // usuario decida. Si reaparece, se retira la marca automáticamente.
+  const allSourcesOk = updatedSources.length > 0 && updatedSources.every(s => s.lastStatus === 'ok');
+  let cancMarked = 0, cancCleared = 0;
+  for (const r of bookings) {
+    if (r.type !== 'reservation' || !r.icalUid) continue;
+    const srcId = r.icalSourceId;
+    let checkable = false, present = false;
+    if (srcId && okSourceIds.has(srcId)) {
+      checkable = true;
+      present = (seenUidsBySource.get(srcId) || new Set()).has(r.icalUid);
+    } else if (!srcId && allSourcesOk) {
+      // Reserva sin fuente de origen registrada: sólo si TODAS las fuentes
+      // sincronizaron OK (evita falsos positivos por una fuente caída).
+      checkable = true;
+      present = seenUidsAll.has(r.icalUid);
+    }
+    if (!checkable) continue;
+    if (present) {
+      // Sigue en el iCal → retirar cualquier marca previa (incl. "ignorada").
+      if (r.possibleCancellation || r.cancellationIgnored) {
+        delete r.possibleCancellation; delete r.cancellationDetectedAt; delete r.cancellationIgnored;
+        cancCleared++;
+      }
+    } else {
+      if (r.cancellationIgnored) continue;          // el usuario decidió conservarla
+      if (!r.possibleCancellation) {
+        r.possibleCancellation = true;
+        r.cancellationDetectedAt = new Date().toISOString();
+        cancMarked++;
+      }
+    }
+  }
+  if (cancMarked)  slog(`[Cancelaciones] ${cancMarked} posible(s) cancelación(es) detectada(s)`);
+  if (cancCleared) slog(`[Cancelaciones] ${cancCleared} reserva(s) reaparecida(s) — marca retirada`);
+
   // Calcular y agregar bloques de capacidad (Villa La Palma)
   const capBlocks = computeVLPCapacityBlocks(bookings, updatedSources);
   bookings.push(...capBlocks);

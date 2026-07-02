@@ -110,6 +110,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dc.icalblk{background:var(--ical-bg)}.dc.icalblk:hover{background:#fdba74}
 .dc.capblk{background:var(--cap-bg)}.dc.capblk:hover{background:#e9d5ff}
 .dc.freebk{background:var(--free-bg);border-style:dashed!important}.dc.freebk:hover{background:#dcfce7}
+/* Posible cancelación: reserva en gris rayado (aún ocupa hasta que el usuario decide) */
+.dc.cancel{background:repeating-linear-gradient(45deg,#e2e8f0,#e2e8f0 6px,#cbd5e1 6px,#cbd5e1 12px)!important}
+.dc.cancel:hover{background:repeating-linear-gradient(45deg,#dbe2ea,#dbe2ea 6px,#c2ccd8 6px,#c2ccd8 12px)!important}
+.dc.cancel .bk-label{color:#475569;text-decoration:line-through}
+html.dark .dc.cancel{background:repeating-linear-gradient(45deg,#334155,#334155 6px,#1e293b 6px,#1e293b 12px)!important}
+html.dark .dc.cancel .bk-label{color:#cbd5e1}
 
 .dc.bk-start{border-left:3px solid}
 .dc.res.bk-start{border-left-color:var(--res-bdr)}
@@ -263,6 +269,16 @@ html.dark .edit-fechas{border-top-color:#334155}
 .alert-item.warning{background:#fffbeb;border:1px solid #fde68a}
 .alert-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
 .alert-msg{color:#1e293b;line-height:1.4}
+.cancel-hint{font-size:.8rem;color:#64748b;margin:0 0 12px;line-height:1.4}
+.cancel-list{display:flex;flex-direction:column;gap:10px;max-height:440px;overflow-y:auto}
+.cancel-card{border:1px solid #e2e8f0;border-left:4px solid #94a3b8;border-radius:8px;padding:11px 13px;background:#f8fafc}
+html.dark .cancel-card{background:#0f172a;border-color:#334155;border-left-color:#64748b}
+.cancel-card .cc-name{font-weight:800;font-size:.9rem;color:#1e293b}
+html.dark .cancel-card .cc-name{color:#e2e8f0}
+.cancel-card .cc-meta{font-size:.78rem;color:#64748b;margin-top:2px;line-height:1.5}
+.cancel-card .cc-btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.cancel-card .cc-btns .btn{font-size:.78rem;padding:7px 11px}
+.cancel-empty{text-align:center;color:#94a3b8;font-size:.85rem;padding:24px}
 .alert-empty{text-align:center;color:#94a3b8;padding:30px;font-size:.9rem}
 
 /* ── CONFLICTO EN CELDA ── */
@@ -631,6 +647,11 @@ html.dark .prices-tbl input[type=number]:disabled{background:#1e293b;color:#4755
     <button class="btn-compact" id="btnCompact" title="Vista compacta / normal">⊟ Compacta</button>
     <!-- Modo oscuro -->
     <button class="btn-dark" id="btnDark" title="Modo oscuro">🌙</button>
+    <!-- Posibles cancelaciones -->
+    <button class="alert-btn" id="btnCancel" title="Posibles cancelaciones detectadas" style="display:none">
+      🚫
+      <span class="alert-badge" id="cancelBadge">0</span>
+    </button>
     <!-- Alertas -->
     <button class="alert-btn" id="btnAlerts" title="Ver alertas del sistema">
       🔔
@@ -759,6 +780,23 @@ html.dark .prices-tbl input[type=number]:disabled{background:#1e293b;color:#4755
     </div>
     <div class="mfoot">
       <button class="btn btn-sec" id="alertsCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL POSIBLES CANCELACIONES ═══ -->
+<div class="overlay" id="cancelOv">
+  <div class="mbox alerts-box">
+    <div class="mhdr">
+      <div class="mtitle">🚫 Posibles cancelaciones</div>
+      <button class="mclose" id="cancelClose">&#215;</button>
+    </div>
+    <div class="mbody">
+      <p class="cancel-hint">Estas reservas ya no aparecen en el iCal de su plataforma de origen: probablemente fueron canceladas. Revisa cada una y decide.</p>
+      <div class="cancel-list" id="cancelList"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-sec" id="cancelCerrar">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1082,8 +1120,10 @@ function renderCal(){
           const isIcal=bk.type==='ical-block';
           const isCap=bk.type==='capacity-block';
           const isFree=bk.type==='ical-override';
+          const isCancel=isRes&&bk.possibleCancellation&&!bk.cancellationIgnored;
           // Noches ocupadas [s, e): el día de salida (e) no se pinta y queda libre.
           cls+=isRes?' res':isIcal?' icalblk':isCap?' capblk':isFree?' freebk':' blk';
+          if(isCancel) cls+=' cancel'; // posible cancelación: gris rayado
           if(isFirst(bk,curY,curM,d)) cls+=' bk-start';
           if(isLast(bk,curY,curM,d))  cls+=' bk-end';
           if(isFirst(bk,curY,curM,d)){
@@ -1101,6 +1141,7 @@ function renderCal(){
   });
 
   document.getElementById('calWrap').innerHTML=h;
+  updateCancelBadge();
   document.querySelectorAll('.dc').forEach(el=>{
     el.addEventListener('click',()=>{
       if(suppressClick) return;
@@ -1567,6 +1608,74 @@ function openAlerts(){
   document.getElementById('alertsOv').classList.add('on');
 }
 function closeAlerts(){ document.getElementById('alertsOv').classList.remove('on'); }
+
+// ═══════════════════════════════════════════
+// POSIBLES CANCELACIONES
+// ═══════════════════════════════════════════
+function getCancellations(list){
+  return (list||bookings).filter(b =>
+    b.type==='reservation' && b.possibleCancellation && !b.cancellationIgnored);
+}
+function updateCancelBadge(list){
+  const n=getCancellations(list).length;
+  const btn=document.getElementById('btnCancel');
+  const badge=document.getElementById('cancelBadge');
+  if(!btn||!badge) return n;
+  if(n>0){ badge.textContent=n>9?'9+':n; btn.style.display=''; }
+  else   { btn.style.display='none'; }
+  return n;
+}
+function openCancelPanel(){
+  const list=document.getElementById('cancelList');
+  const canc=getCancellations();
+  if(!canc.length){
+    list.innerHTML='<div class="cancel-empty">✅ No hay cancelaciones pendientes de revisar.</div>';
+  } else {
+    list.innerHTML=canc.map(bk=>{
+      const prop=PROPS.find(p=>p.id===bk.pid);
+      const propTxt=prop?`${prop.name}${prop.group?' · '+prop.group:''} · ${prop.dest}`:bk.pid;
+      const nights=bkNights(bk);
+      return `<div class="cancel-card">
+        <div class="cc-name">${bk.name||'Sin nombre'}</div>
+        <div class="cc-meta">
+          🏠 ${propTxt}<br>
+          📅 ${fmtDate(bk.s)} → ${fmtDate(bk.e)} · ${nights} noche${nights!==1?'s':''}<br>
+          🔗 ${bk.platform||'iCal'}${bk.cancellationDetectedAt?` · detectada ${fmtDate(bk.cancellationDetectedAt.slice(0,10))}`:''}
+        </div>
+        <div class="cc-btns">
+          <button class="btn btn-del" data-canc-del="${bk.id}">Confirmar cancelación y eliminar</button>
+          <button class="btn btn-sec" data-canc-keep="${bk.id}">Ignorar (mantener reserva)</button>
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('[data-canc-del]').forEach(b=>b.addEventListener('click',()=>confirmarCancelacion(b.dataset.cancDel)));
+    list.querySelectorAll('[data-canc-keep]').forEach(b=>b.addEventListener('click',()=>ignorarCancelacion(b.dataset.cancKeep)));
+  }
+  document.getElementById('cancelOv').classList.add('on');
+}
+function closeCancelPanel(){ document.getElementById('cancelOv').classList.remove('on'); }
+
+async function confirmarCancelacion(id){
+  const bk=bookings.find(b=>b.id===id); if(!bk) return;
+  if(!confirm(`¿Eliminar definitivamente la reserva de "${bk.name||'Sin nombre'}" (${fmtDate(bk.s)} – ${fmtDate(bk.e)})?\n\nSe borra de la base de datos y del iCal de salida.`)) return;
+  try{
+    await api('DELETE',`/api/bookings/${id}`);
+    await refreshBookings();
+    renderCal(); updateCancelBadge();
+    if(getCancellations().length) openCancelPanel(); else closeCancelPanel();
+    updateAlerts();
+  }catch(err){ alert('Error al eliminar la reserva: '+err.message); }
+}
+async function ignorarCancelacion(id){
+  const bk=bookings.find(b=>b.id===id); if(!bk) return;
+  try{
+    // Mantener la reserva y no volver a alertar hasta que reaparezca en el iCal.
+    await api('PUT',`/api/bookings/${id}`,{...bk,possibleCancellation:false,cancellationIgnored:true});
+    await refreshBookings();
+    renderCal(); updateCancelBadge();
+    if(getCancellations().length) openCancelPanel(); else closeCancelPanel();
+  }catch(err){ alert('Error al actualizar la reserva: '+err.message); }
+}
 
 // ═══════════════════════════════════════════
 // CONFLICTOS
@@ -2236,7 +2345,9 @@ async function guardarConfirmReserva(){
     notes:    document.getElementById('cNotes').value.trim(),
     // Desligar del sync para que el bloque no se borre ni se vuelva a importar.
     // Se conserva icalUid: el servidor lo usa para no recrear el bloque naranja.
+    // icalSourceId recuerda la fuente de origen para detectar cancelaciones.
     source:'', sourceId:'', confirmedFromIcal:true,
+    icalSourceId: bk.icalSourceId || bk.sourceId || '',
   };
   try {
     await api('PUT',`/api/bookings/${id}`, payload);
@@ -2583,6 +2694,14 @@ async function init(){
   setInterval(updateAlerts, 30000);
   await updateAlerts();
 
+  // Refrescar bookings en segundo plano para que las cancelaciones detectadas en
+  // syncs automáticos actualicen el badge sin recargar. No re-renderiza el
+  // calendario para no perder el scroll; el gris rayado aparece en el próximo render.
+  setInterval(async()=>{
+    if(document.querySelector('.overlay.on')) return; // no interferir con un modal abierto
+    try{ await refreshBookings(); updateCancelBadge(); }catch{}
+  }, 30000);
+
   // Navegación
   document.getElementById('btnPrev').addEventListener('click',()=>goMonth(-1));
   document.getElementById('btnNext').addEventListener('click',()=>goMonth(1));
@@ -2790,6 +2909,10 @@ async function init(){
   document.getElementById('alertsClose').addEventListener('click', closeAlerts);
   document.getElementById('alertsCerrar').addEventListener('click', closeAlerts);
   document.getElementById('alertsOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlerts();});
+  document.getElementById('btnCancel').addEventListener('click', openCancelPanel);
+  document.getElementById('cancelClose').addEventListener('click', closeCancelPanel);
+  document.getElementById('cancelCerrar').addEventListener('click', closeCancelPanel);
+  document.getElementById('cancelOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCancelPanel();});
 
   // Notas propiedad
   document.getElementById('notesClose').addEventListener('click', closeNotesModal);
